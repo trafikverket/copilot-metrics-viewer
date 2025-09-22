@@ -39,7 +39,7 @@ DOTENV_PRIVATE_KEY_PRODUCTION="HEMLIGNYCKELHÄR"
 
 1. Installera beroenden: `npm install`
 2. Starta app
-    - Produktionsbygge: `npm run build && dotenvx run -f .env -- node .output/server/index.mjs`
+    - Produktionsbygge (Rekommenderas då prestandan är mycket bättre): `npm run build && dotenvx run -f .env -- node .output/server/index.mjs`
     - Devserver med hot reload: `dotenvx run -f .env -- npm run dev`
 
 ### Kör i produktion
