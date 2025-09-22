@@ -98,26 +98,25 @@ v-if="item === 'api response'" :metrics="metrics" :original-metrics="originalMet
   </div>
 </template>
 <script lang='ts'>
-import type { Metrics } from '@/model/Metrics';
-import type { CopilotMetrics } from '@/model/Copilot_Metrics';
-import type { MetricsApiResponse } from '@/types/metricsApiResponse';
+import type { H3Error } from "h3";
+import { useRoute } from "vue-router";
+import type { CopilotMetrics } from "@/model/Copilot_Metrics";
+import type { Metrics } from "@/model/Metrics";
+import { Options } from "@/model/Options";
 import type { Seat } from "@/model/Seat";
-import type { H3Error } from 'h3'
-
+import type { MetricsApiResponse } from "@/types/metricsApiResponse";
+import AgentModeViewer from "./AgentModeViewer.vue";
+import ApiResponse from "./ApiResponse.vue";
+import BreakdownComponent from "./BreakdownComponent.vue";
+import CopilotChatViewer from "./CopilotChatViewer.vue";
+import DateRangeSelector from "./DateRangeSelector.vue";
 //Components
-import MetricsViewer from './MetricsViewer.vue'
-import BreakdownComponent from './BreakdownComponent.vue'
-import CopilotChatViewer from './CopilotChatViewer.vue'
-import SeatsAnalysisViewer from './SeatsAnalysisViewer.vue'
-import TeamsComponent from './TeamsComponent.vue'
-import ApiResponse from './ApiResponse.vue'
-import AgentModeViewer from './AgentModeViewer.vue'
-import DateRangeSelector from './DateRangeSelector.vue'
-import { Options } from '@/model/Options';
-import { useRoute } from 'vue-router';
+import MetricsViewer from "./MetricsViewer.vue";
+import SeatsAnalysisViewer from "./SeatsAnalysisViewer.vue";
+import TeamsComponent from "./TeamsComponent.vue";
 
 export default defineNuxtComponent({
-  name: 'MainComponent',
+  name: "MainComponent",
   components: {
     MetricsViewer,
     BreakdownComponent,
@@ -126,11 +125,11 @@ export default defineNuxtComponent({
     TeamsComponent,
     ApiResponse,
     AgentModeViewer,
-    DateRangeSelector
+    DateRangeSelector,
   },
   methods: {
     logout() {
-      const { clear } = useUserSession()
+      const { clear } = useUserSession();
       this.metrics = [];
       this.seats = [];
       clear();
@@ -138,26 +137,26 @@ export default defineNuxtComponent({
     getDisplayTabName(itemName: string): string {
       // Transform scope names to display names for tabs
       switch (itemName) {
-        case 'team-organization':
-        case 'team-enterprise':
-          return 'team';
-        case 'organization':
-        case 'enterprise':
+        case "team-organization":
+        case "team-enterprise":
+          return "team";
+        case "organization":
+        case "enterprise":
           return itemName;
         default:
           return itemName;
       }
     },
-    async handleDateRangeChange(newDateRange: { 
-      since?: string; 
-      until?: string; 
+    async handleDateRangeChange(newDateRange: {
+      since?: string;
+      until?: string;
       description: string;
       excludeHolidays?: boolean;
     }) {
       this.dateRangeDescription = newDateRange.description;
       this.dateRange = {
         since: newDateRange.since,
-        until: newDateRange.until
+        until: newDateRange.until,
       };
 
       // Store holiday options
@@ -168,7 +167,12 @@ export default defineNuxtComponent({
       await this.fetchMetrics();
     },
     async fetchMetrics() {
-      if (this.signInRequired || !this.dateRange.since || !this.dateRange.until || this.isLoading) {
+      if (
+        this.signInRequired ||
+        !this.dateRange.since ||
+        !this.dateRange.until ||
+        this.isLoading
+      ) {
         return;
       }
       const config = useRuntimeConfig();
@@ -178,28 +182,39 @@ export default defineNuxtComponent({
       this.apiError = undefined;
 
       try {
-        const options = Options.fromRoute(this.route, this.dateRange.since, this.dateRange.until);
-        
+        const options = Options.fromRoute(
+          this.route,
+          this.dateRange.since,
+          this.dateRange.until,
+        );
+
         // Add holiday options if they're set
         if (this.holidayOptions?.excludeHolidays) {
           options.excludeHolidays = this.holidayOptions.excludeHolidays;
         }
-        
+
         const params = options.toParams();
 
         const queryString = new URLSearchParams(params).toString();
-        const apiUrl = queryString ? `/api/metrics?${queryString}` : '/api/metrics';
+        const apiUrl = queryString
+          ? `/api/metrics?${queryString}`
+          : "/api/metrics";
 
-        const response = await $fetch(apiUrl) as MetricsApiResponse;
+        const response = (await $fetch(apiUrl)) as MetricsApiResponse;
 
         this.metrics = response.metrics || [];
         this.originalMetrics = response.usage || [];
         this.metricsReady = true;
 
-        if (config.public.scope && config.public.scope.includes('team') && this.metrics.length === 0 && !this.apiError) {
-          this.apiError = 'No data returned from API - check if the team exists and has any activity and at least 5 active members';
+        if (
+          config.public.scope &&
+          config.public.scope.includes("team") &&
+          this.metrics.length === 0 &&
+          !this.apiError
+        ) {
+          this.apiError =
+            "No data returned from API - check if the team exists and has any activity and at least 5 active members";
         }
-
       } catch (error: any) {
         this.processError(error);
       } finally {
@@ -207,15 +222,16 @@ export default defineNuxtComponent({
       }
     },
     processError(error: H3Error) {
-      console.error(error || 'No data returned from API');
+      console.error(error || "No data returned from API");
       // Check the status code of the error response
       if (error && error.statusCode) {
         switch (error.statusCode) {
           case 401:
-            this.apiError = '401 Unauthorized access returned by GitHub API - check if your token in the .env (for local runs). Check PAT token and GitHub permissions.';
+            this.apiError =
+              "401 Unauthorized access returned by GitHub API - check if your token in the .env (for local runs). Check PAT token and GitHub permissions.";
             break;
           case 404:
-            this.apiError = `404 Not Found - is the ${this.config?.public?.scope || ''} org:"${this.config?.public?.githubOrg || ''}" ent:"${this.config?.public?.githubEnt || ''}" team:"${this.config?.public?.githubTeam}" correct? ${error.message}`;
+            this.apiError = `404 Not Found - is the ${this.config?.public?.scope || ""} org:"${this.config?.public?.githubOrg || ""}" ent:"${this.config?.public?.githubEnt || ""}" team:"${this.config?.public?.githubTeam}" correct? ${error.message}`;
             break;
           case 422:
             this.apiError = `422 Unprocessable Entity - Is the Copilot Metrics API enabled for the Org/Ent? When changing filters, try adjusting the "from" date.  ${error.message}`;
@@ -228,14 +244,21 @@ export default defineNuxtComponent({
             break;
         }
       }
-    }
+    },
   },
 
   data() {
     return {
-      tabItems: ['languages', 'editors', 'copilot chat', 'github.com', 'seat analysis', 'api response'],
+      tabItems: [
+        "languages",
+        "editors",
+        "copilot chat",
+        "github.com",
+        "seat analysis",
+        "api response",
+      ],
       tab: null,
-      dateRangeDescription: 'Over the last 28 days',
+      dateRangeDescription: "Over the last 28 days",
       isLoading: false,
       metricsReady: false,
       metrics: [] as Metrics[],
@@ -246,26 +269,29 @@ export default defineNuxtComponent({
       config: null as ReturnType<typeof useRuntimeConfig> | null,
       holidayOptions: {
         excludeHolidays: false,
-      }
-    }
+      },
+    };
   },
   created() {
     this.tabItems.unshift(this.getDisplayTabName(this.itemName));
-    
+
     // Add teams tab for organization and enterprise scopes to allow team comparison
-    if (this.itemName === 'organization' || this.itemName === 'enterprise') {
-      this.tabItems.splice(1, 0, 'teams'); // Insert after the first tab
+    if (this.itemName === "organization" || this.itemName === "enterprise") {
+      this.tabItems.splice(1, 0, "teams"); // Insert after the first tab
     }
-    
+
     this.config = useRuntimeConfig();
   },
   async mounted() {
     // Load initial data
     try {
-
       await this.fetchMetrics();
 
-      const { data: seatsData, error: seatsError, execute: executeSeats } = this.seatsFetch;
+      const {
+        data: seatsData,
+        error: seatsError,
+        execute: executeSeats,
+      } = this.seatsFetch;
 
       if (!this.signInRequired) {
         await executeSeats();
@@ -277,20 +303,28 @@ export default defineNuxtComponent({
           this.seatsReady = true;
         }
       }
-
     } catch (error) {
-      console.error('Error loading initial data:', error);
+      console.error("Error loading initial data:", error);
     }
   },
   async setup() {
-    const { loggedIn, user } = useUserSession()
+    const { loggedIn, user } = useUserSession();
     const config = useRuntimeConfig();
-    const showLogoutButton = computed(() => config.public.usingGithubAuth && loggedIn.value);
-    const mockedDataMessage = computed(() => config.public.isDataMocked ? 'Using mock data - see README if unintended' : '');
+    const showLogoutButton = computed(
+      () => config.public.usingGithubAuth && loggedIn.value,
+    );
+    const mockedDataMessage = computed(() =>
+      config.public.isDataMocked
+        ? "Using mock data - see README if unintended"
+        : "",
+    );
     const itemName = computed(() => config.public.scope);
-    const githubInfo = getDisplayName(config.public)
+    const githubInfo = getDisplayName(config.public);
     const displayName = computed(() => githubInfo);
-    const dateRange = ref({ since: undefined as string | undefined, until: undefined as string | undefined });
+    const dateRange = ref({
+      since: undefined as string | undefined,
+      until: undefined as string | undefined,
+    });
     const isLoading = ref(false);
     const route = ref(useRoute());
 
@@ -298,13 +332,13 @@ export default defineNuxtComponent({
       return config.public.usingGithubAuth && !loggedIn.value;
     });
 
-    const seatsFetch = useFetch('/api/seats', {
+    const seatsFetch = useFetch("/api/seats", {
       server: true,
       immediate: !signInRequired.value,
       query: computed(() => {
         const options = Options.fromRoute(route.value);
         return options.toParams();
-      })
+      }),
     });
 
     return {
@@ -320,7 +354,7 @@ export default defineNuxtComponent({
       route,
     };
   },
-})
+});
 </script>
 
 <style scoped>

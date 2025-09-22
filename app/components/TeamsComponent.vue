@@ -284,24 +284,31 @@ elevation="4" color="white" variant="elevated" class="mx-auto my-3"
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, onMounted, type PropType } from 'vue'
-import { Line as LineChart, Bar as BarChart } from 'vue-chartjs'
-import { Options } from '@/model/Options'
-import type { ChartData, ChartDataset } from 'chart.js'
-import type { MetricsApiResponse } from '@/types/metricsApiResponse';
-import type { Metrics } from '@/model/Metrics';
-import type { CopilotMetrics } from '@/model/Copilot_Metrics';
+import type { ChartData, ChartDataset } from "chart.js";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
   BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend
-} from 'chart.js'
+} from "chart.js";
+import {
+  computed,
+  defineComponent,
+  onMounted,
+  type PropType,
+  ref,
+  watch,
+} from "vue";
+import { Bar as BarChart, Line as LineChart } from "vue-chartjs";
+import type { CopilotMetrics } from "@/model/Copilot_Metrics";
+import type { Metrics } from "@/model/Metrics";
+import { Options } from "@/model/Options";
+import type { MetricsApiResponse } from "@/types/metricsApiResponse";
 
 ChartJS.register(
   CategoryScale,
@@ -311,374 +318,531 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
-)
+  Legend,
+);
 
-interface DateRange { since?: string; until?: string }
-
-interface Team {
-  name: string
-  slug: string
-  description?: string
+interface DateRange {
+  since?: string;
+  until?: string;
 }
 
-interface LanguageTeamData { team: string; language: string; acceptance_rate: number }
-interface EditorTeamData { team: string; editor: string; active_users: number }
+interface Team {
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+interface LanguageTeamData {
+  team: string;
+  language: string;
+  acceptance_rate: number;
+}
+interface EditorTeamData {
+  team: string;
+  editor: string;
+  active_users: number;
+}
 
 // Keys we will chart from the legacy Metrics object mapping
-type LineMetricKey = 'acceptance_rate_by_count' | 'acceptance_rate_by_lines' | 'total_suggestions_count' | 'total_acceptances_count' | 'total_lines_suggested' | 'total_lines_accepted' | 'total_active_users'
+type LineMetricKey =
+  | "acceptance_rate_by_count"
+  | "acceptance_rate_by_lines"
+  | "total_suggestions_count"
+  | "total_acceptances_count"
+  | "total_lines_suggested"
+  | "total_lines_accepted"
+  | "total_active_users";
 
 export default defineComponent({
-  name: 'TeamsComponent',
+  name: "TeamsComponent",
   components: { LineChart, BarChart },
   props: {
-    dateRange: { type: Object as PropType<DateRange>, required: false, default: () => ({}) },
-    dateRangeDescription: { type: String, default: '' }
+    dateRange: {
+      type: Object as PropType<DateRange>,
+      required: false,
+      default: () => ({}),
+    },
+    dateRangeDescription: { type: String, default: "" },
   },
   setup(props) {
-    const availableTeams = ref<Team[]>([])
-    const selectedTeams = ref<string[]>([])
+    const availableTeams = ref<Team[]>([]);
+    const selectedTeams = ref<string[]>([]);
 
-    const acceptanceRateCountChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const suggestionsAcceptancesChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const acceptanceRateLinesChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const linesSuggestedAcceptedChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const activeUsersChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const ideCompletionsChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const ideChatChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const githubChatChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
-    const githubPrChartData = ref<ChartData<'line', number[], string>>({ labels: [], datasets: [] })
+    const acceptanceRateCountChartData = ref<
+      ChartData<"line", number[], string>
+    >({ labels: [], datasets: [] });
+    const suggestionsAcceptancesChartData = ref<
+      ChartData<"line", number[], string>
+    >({ labels: [], datasets: [] });
+    const acceptanceRateLinesChartData = ref<
+      ChartData<"line", number[], string>
+    >({ labels: [], datasets: [] });
+    const linesSuggestedAcceptedChartData = ref<
+      ChartData<"line", number[], string>
+    >({ labels: [], datasets: [] });
+    const activeUsersChartData = ref<ChartData<"line", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
+    const ideCompletionsChartData = ref<ChartData<"line", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
+    const ideChatChartData = ref<ChartData<"line", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
+    const githubChatChartData = ref<ChartData<"line", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
+    const githubPrChartData = ref<ChartData<"line", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
 
-    const languageComparison = ref<LanguageTeamData[]>([])
-    const editorComparison = ref<EditorTeamData[]>([])
-    const languageBarChartData = ref<ChartData<'bar', number[], string>>({ labels: [], datasets: [] })
-    const editorBarChartData = ref<ChartData<'bar', number[], string>>({ labels: [], datasets: [] })
+    const languageComparison = ref<LanguageTeamData[]>([]);
+    const editorComparison = ref<EditorTeamData[]>([]);
+    const languageBarChartData = ref<ChartData<"bar", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
+    const editorBarChartData = ref<ChartData<"bar", number[], string>>({
+      labels: [],
+      datasets: [],
+    });
 
     const chartOptions = {
       responsive: true,
       maintainAspectRatio: true,
       scales: { y: { beginAtZero: true } },
-      layout: { padding: { left: 50, right: 50, top: 50, bottom: 50 } }
-    }
+      layout: { padding: { left: 50, right: 50, top: 50, bottom: 50 } },
+    };
     const barChartOptions = {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, ticks: { precision: 0 } },
-        x: { ticks: { maxRotation: 0, autoSkip: true } }
+        x: { ticks: { maxRotation: 0, autoSkip: true } },
       },
-      plugins: { legend: { position: 'top' as const } },
+      plugins: { legend: { position: "top" as const } },
       layout: { padding: { left: 12, right: 12, top: 8, bottom: 8 } },
-      elements: { bar: { borderWidth: 1 } }
-    }
+      elements: { bar: { borderWidth: 1 } },
+    };
 
-    const selectedTeamObjects = computed(() => availableTeams.value.filter(team => selectedTeams.value.includes(team.slug)))
+    const selectedTeamObjects = computed(() =>
+      availableTeams.value.filter((team) =>
+        selectedTeams.value.includes(team.slug),
+      ),
+    );
     const scopeType = computed(() => {
-      const config = useRuntimeConfig()
-      return config.public.scope === 'enterprise' ? 'enterprise' : 'organization'
-    })
-  // Aggregate total active users across selected teams (latest day for each)
-  const aggregatedTotalActiveUsers = ref(0)
-  const totalActiveUsers = computed(() => aggregatedTotalActiveUsers.value)
+      const config = useRuntimeConfig();
+      return config.public.scope === "enterprise"
+        ? "enterprise"
+        : "organization";
+    });
+    // Aggregate total active users across selected teams (latest day for each)
+    const aggregatedTotalActiveUsers = ref(0);
+    const totalActiveUsers = computed(() => aggregatedTotalActiveUsers.value);
 
-    const clearSelection = () => { selectedTeams.value = [] }
+    const clearSelection = () => {
+      selectedTeams.value = [];
+    };
     const getTeamDetailUrl = (teamSlug: string) => {
-      const config = useRuntimeConfig()
-      return config.public.scope === 'enterprise'
+      const config = useRuntimeConfig();
+      return config.public.scope === "enterprise"
         ? `/enterprises/${config.public.githubEnt}/teams/${teamSlug}`
-        : `/orgs/${config.public.githubOrg}/teams/${teamSlug}`
-    }
-
+        : `/orgs/${config.public.githubOrg}/teams/${teamSlug}`;
+    };
 
     const loadTeams = async () => {
       const route = useRoute();
-      const options = Options.fromRoute(route, props.dateRange.since, props.dateRange.until);
+      const options = Options.fromRoute(
+        route,
+        props.dateRange.since,
+        props.dateRange.until,
+      );
       const params = options.toParams();
 
-      const teams = await $fetch<Team[]>('/api/teams', { params })
-      availableTeams.value = teams
-    }
+      const teams = await $fetch<Team[]>("/api/teams", { params });
+      availableTeams.value = teams;
+    };
     // Load metrics for a single team via /api/metrics (old + new formats)
     const loadMetricsForTeam = async (teamSlug: string) => {
       const route = useRoute();
-      const options = Options.fromRoute(route, props.dateRange.since, props.dateRange.until);
+      const options = Options.fromRoute(
+        route,
+        props.dateRange.since,
+        props.dateRange.until,
+      );
       // Force scope to team variant based on current broader scope
-      if (options.scope === 'enterprise') options.scope = 'team-enterprise';
-      else if (options.scope === 'organization') options.scope = 'team-organization';
+      if (options.scope === "enterprise") options.scope = "team-enterprise";
+      else if (options.scope === "organization")
+        options.scope = "team-organization";
       options.githubTeam = teamSlug;
       const params = options.toParams();
-      const response = await $fetch<MetricsApiResponse>('/api/metrics', { params })
+      const response = await $fetch<MetricsApiResponse>("/api/metrics", {
+        params,
+      });
       return response;
-    }
+    };
 
     const generateBarChartData = () => {
       // Generate language bar chart data
-      const languages = [...new Set(languageComparison.value.map(l => l.language))]
-      const teams = [...new Set(languageComparison.value.map(l => l.team))]
+      const languages = [
+        ...new Set(languageComparison.value.map((l) => l.language)),
+      ];
+      const teams = [...new Set(languageComparison.value.map((l) => l.team))];
 
       const languageDatasets = teams.map((team, index) => {
-        const colorIndex = index % teamColors.length
+        const colorIndex = index % teamColors.length;
         return {
           label: team,
-          data: languages.map(language => {
-            const langData = languageComparison.value.find(l => l.language === language && l.team === team)
-            return langData ? langData.acceptance_rate : 0
+          data: languages.map((language) => {
+            const langData = languageComparison.value.find(
+              (l) => l.language === language && l.team === team,
+            );
+            return langData ? langData.acceptance_rate : 0;
           }),
           backgroundColor: teamColors[colorIndex]!.border,
           borderColor: teamColors[colorIndex]!.border,
-          borderWidth: 1
-        }
-      })
+          borderWidth: 1,
+        };
+      });
 
       languageBarChartData.value = {
         labels: languages,
-        datasets: languageDatasets
-      }
+        datasets: languageDatasets,
+      };
 
       // Generate editor bar chart data
-      const editors = [...new Set(editorComparison.value.map(e => e.editor))]
+      const editors = [...new Set(editorComparison.value.map((e) => e.editor))];
 
       const editorDatasets = teams.map((team, index) => {
-        const colorIndex = index % teamColors.length
+        const colorIndex = index % teamColors.length;
         return {
           label: team,
-          data: editors.map(editor => {
-            const editorData = editorComparison.value.find(e => e.editor === editor && e.team === team)
-            return editorData ? editorData.active_users : 0
+          data: editors.map((editor) => {
+            const editorData = editorComparison.value.find(
+              (e) => e.editor === editor && e.team === team,
+            );
+            return editorData ? editorData.active_users : 0;
           }),
           backgroundColor: teamColors[colorIndex]!.border,
           borderColor: teamColors[colorIndex]!.border,
-          borderWidth: 1
-        }
-      })
+          borderWidth: 1,
+        };
+      });
 
       editorBarChartData.value = {
         labels: editors,
-        datasets: editorDatasets
-      }
-    }
+        datasets: editorDatasets,
+      };
+    };
 
     // Chart colors for different teams
     const teamColors = [
-      { bg: 'rgba(75, 192, 192, 0.2)', border: 'rgba(75, 192, 192, 1)' },
-      { bg: 'rgba(153, 102, 255, 0.2)', border: 'rgba(153, 102, 255, 1)' },
-      { bg: 'rgba(255, 159, 64, 0.2)', border: 'rgba(255, 159, 64, 1)' },
-      { bg: 'rgba(255, 99, 132, 0.2)', border: 'rgba(255, 99, 132, 1)' },
-      { bg: 'rgba(54, 162, 235, 0.2)', border: 'rgba(54, 162, 235, 1)' }
-    ]
+      { bg: "rgba(75, 192, 192, 0.2)", border: "rgba(75, 192, 192, 1)" },
+      { bg: "rgba(153, 102, 255, 0.2)", border: "rgba(153, 102, 255, 1)" },
+      { bg: "rgba(255, 159, 64, 0.2)", border: "rgba(255, 159, 64, 1)" },
+      { bg: "rgba(255, 99, 132, 0.2)", border: "rgba(255, 99, 132, 1)" },
+      { bg: "rgba(54, 162, 235, 0.2)", border: "rgba(54, 162, 235, 1)" },
+    ];
 
-  const updateChartData = async () => {
+    const updateChartData = async () => {
       if (selectedTeams.value.length === 0) {
         // Clear all charts
-        acceptanceRateCountChartData.value = { labels: [], datasets: [] }
-        suggestionsAcceptancesChartData.value = { labels: [], datasets: [] }
-        acceptanceRateLinesChartData.value = { labels: [], datasets: [] }
-        linesSuggestedAcceptedChartData.value = { labels: [], datasets: [] }
-        activeUsersChartData.value = { labels: [], datasets: [] }
-        ideCompletionsChartData.value = { labels: [], datasets: [] }
-        ideChatChartData.value = { labels: [], datasets: [] }
-        githubChatChartData.value = { labels: [], datasets: [] }
-        githubPrChartData.value = { labels: [], datasets: [] }
-        languageComparison.value = []
-        editorComparison.value = []
-        languageBarChartData.value = { labels: [], datasets: [] }
-        editorBarChartData.value = { labels: [], datasets: [] }
-        return
+        acceptanceRateCountChartData.value = { labels: [], datasets: [] };
+        suggestionsAcceptancesChartData.value = { labels: [], datasets: [] };
+        acceptanceRateLinesChartData.value = { labels: [], datasets: [] };
+        linesSuggestedAcceptedChartData.value = { labels: [], datasets: [] };
+        activeUsersChartData.value = { labels: [], datasets: [] };
+        ideCompletionsChartData.value = { labels: [], datasets: [] };
+        ideChatChartData.value = { labels: [], datasets: [] };
+        githubChatChartData.value = { labels: [], datasets: [] };
+        githubPrChartData.value = { labels: [], datasets: [] };
+        languageComparison.value = [];
+        editorComparison.value = [];
+        languageBarChartData.value = { labels: [], datasets: [] };
+        editorBarChartData.value = { labels: [], datasets: [] };
+        return;
       }
 
       // Fetch metrics for each selected team individually
-      const perTeamResponses = await Promise.all(selectedTeams.value.map(slug => loadMetricsForTeam(slug)))
+      const perTeamResponses = await Promise.all(
+        selectedTeams.value.map((slug) => loadMetricsForTeam(slug)),
+      );
 
       // Build a structure for quick lookup
-      interface PerTeamData { slug: string; metrics: Metrics[]; usage: CopilotMetrics[] }
+      interface PerTeamData {
+        slug: string;
+        metrics: Metrics[];
+        usage: CopilotMetrics[];
+      }
       const perTeamData: PerTeamData[] = perTeamResponses.map((resp, idx) => ({
         slug: selectedTeams.value[idx]!,
         metrics: (resp.metrics as Metrics[]) || [],
-        usage: (resp.usage as CopilotMetrics[]) || []
-      }))
+        usage: (resp.usage as CopilotMetrics[]) || [],
+      }));
 
       // Collect unique days across all teams
-      const daySet = new Set<string>()
-  perTeamData.forEach(t => t.metrics.forEach((m) => { if (m.day) daySet.add(m.day) }))
+      const daySet = new Set<string>();
+      perTeamData.forEach((t) =>
+        t.metrics.forEach((m) => {
+          if (m.day) daySet.add(m.day);
+        }),
+      );
       // usage array uses 'date' property; ensure inclusion if metrics empty
-  perTeamData.forEach(t => t.usage.forEach((u) => { if (u.date) daySet.add(u.date) }))
-      const days = Array.from(daySet).sort()
+      perTeamData.forEach((t) =>
+        t.usage.forEach((u) => {
+          if (u.date) daySet.add(u.date);
+        }),
+      );
+      const days = Array.from(daySet).sort();
 
-      const getTeamName = (slug: string) => availableTeams.value.find(t => t.slug === slug)?.name || slug
+      const getTeamName = (slug: string) =>
+        availableTeams.value.find((t) => t.slug === slug)?.name || slug;
 
       // Helper to create line datasets pulling from Metrics objects
-      const createMetricsDatasets = (metricKey: LineMetricKey, label: string): ChartDataset<'line', number[]>[] => {
+      const createMetricsDatasets = (
+        metricKey: LineMetricKey,
+        label: string,
+      ): ChartDataset<"line", number[]>[] => {
         return perTeamData.map((teamData, index) => {
-          const teamName = getTeamName(teamData.slug)
-          const colorIndex = index % teamColors.length
+          const teamName = getTeamName(teamData.slug);
+          const colorIndex = index % teamColors.length;
           return {
             label: `${teamName} - ${label}`,
-            data: days.map(day => {
-              const dayData = teamData.metrics.find((d) => d.day === day)
-              return dayData ? (dayData[metricKey] || 0) : 0
+            data: days.map((day) => {
+              const dayData = teamData.metrics.find((d) => d.day === day);
+              return dayData ? dayData[metricKey] || 0 : 0;
             }),
             backgroundColor: teamColors[colorIndex]!.bg,
             borderColor: teamColors[colorIndex]!.border,
-            tension: 0.1
-          }
-        })
-      }
+            tension: 0.1,
+          };
+        });
+      };
 
       acceptanceRateCountChartData.value = {
         labels: days,
-        datasets: createMetricsDatasets('acceptance_rate_by_count', 'Acceptance Rate (%)')
-      }
+        datasets: createMetricsDatasets(
+          "acceptance_rate_by_count",
+          "Acceptance Rate (%)",
+        ),
+      };
 
       // Suggestions & Acceptances datasets
-      const suggestionsDatasets: ChartDataset<'line', number[]>[] = []
+      const suggestionsDatasets: ChartDataset<"line", number[]>[] = [];
       perTeamData.forEach((teamData, index) => {
-        const teamName = getTeamName(teamData.slug)
-        const colorIndex = index % teamColors.length
-        const suggestionsDataset: ChartDataset<'line', number[]> = {
+        const teamName = getTeamName(teamData.slug);
+        const colorIndex = index % teamColors.length;
+        const suggestionsDataset: ChartDataset<"line", number[]> = {
           label: `${teamName} - Suggestions`,
-          data: days.map(day => {
-            const dayData = teamData.metrics.find((d) => d.day === day)
-            return dayData ? (dayData.total_suggestions_count || 0) : 0
+          data: days.map((day) => {
+            const dayData = teamData.metrics.find((d) => d.day === day);
+            return dayData ? dayData.total_suggestions_count || 0 : 0;
           }),
           backgroundColor: teamColors[colorIndex]!.bg,
           borderColor: teamColors[colorIndex]!.border,
-          tension: 0.1
-        }
-        const acceptancesDataset: ChartDataset<'line', number[]> = {
+          tension: 0.1,
+        };
+        const acceptancesDataset: ChartDataset<"line", number[]> = {
           label: `${teamName} - Acceptances`,
-          data: days.map(day => {
-            const dayData = teamData.metrics.find((d) => d.day === day)
-            return dayData ? (dayData.total_acceptances_count || 0) : 0
+          data: days.map((day) => {
+            const dayData = teamData.metrics.find((d) => d.day === day);
+            return dayData ? dayData.total_acceptances_count || 0 : 0;
           }),
           backgroundColor: teamColors[colorIndex]!.bg,
           borderColor: teamColors[colorIndex]!.border,
           borderDash: [5, 5],
-          tension: 0.1
-        }
-        suggestionsDatasets.push(suggestionsDataset, acceptancesDataset)
-      })
-      suggestionsAcceptancesChartData.value = { labels: days, datasets: suggestionsDatasets }
+          tension: 0.1,
+        };
+        suggestionsDatasets.push(suggestionsDataset, acceptancesDataset);
+      });
+      suggestionsAcceptancesChartData.value = {
+        labels: days,
+        datasets: suggestionsDatasets,
+      };
 
       acceptanceRateLinesChartData.value = {
         labels: days,
-        datasets: createMetricsDatasets('acceptance_rate_by_lines', 'Acceptance Rate Lines (%)')
-      }
+        datasets: createMetricsDatasets(
+          "acceptance_rate_by_lines",
+          "Acceptance Rate Lines (%)",
+        ),
+      };
 
       // Lines suggested & accepted
-      const linesDatasets: ChartDataset<'line', number[]>[] = []
+      const linesDatasets: ChartDataset<"line", number[]>[] = [];
       perTeamData.forEach((teamData, index) => {
-        const teamName = getTeamName(teamData.slug)
-        const colorIndex = index % teamColors.length
+        const teamName = getTeamName(teamData.slug);
+        const colorIndex = index % teamColors.length;
         linesDatasets.push(
           {
             label: `${teamName} - Lines Suggested`,
-            data: days.map(day => {
-              const dayData = teamData.metrics.find((d) => d.day === day)
-              return dayData ? (dayData.total_lines_suggested || 0) : 0
+            data: days.map((day) => {
+              const dayData = teamData.metrics.find((d) => d.day === day);
+              return dayData ? dayData.total_lines_suggested || 0 : 0;
             }),
             backgroundColor: teamColors[colorIndex]!.bg,
             borderColor: teamColors[colorIndex]!.border,
-            tension: 0.1
+            tension: 0.1,
           },
           {
             label: `${teamName} - Lines Accepted`,
-            data: days.map(day => {
-              const dayData = teamData.metrics.find((d) => d.day === day)
-              return dayData ? (dayData.total_lines_accepted || 0) : 0
+            data: days.map((day) => {
+              const dayData = teamData.metrics.find((d) => d.day === day);
+              return dayData ? dayData.total_lines_accepted || 0 : 0;
             }),
             backgroundColor: teamColors[colorIndex]!.bg,
             borderColor: teamColors[colorIndex]!.border,
             borderDash: [5, 5],
-            tension: 0.1
-          }
-        )
-      })
-      linesSuggestedAcceptedChartData.value = { labels: days, datasets: linesDatasets }
+            tension: 0.1,
+          },
+        );
+      });
+      linesSuggestedAcceptedChartData.value = {
+        labels: days,
+        datasets: linesDatasets,
+      };
 
       activeUsersChartData.value = {
         labels: days,
-        datasets: createMetricsDatasets('total_active_users', 'Active Users')
-      }
+        datasets: createMetricsDatasets("total_active_users", "Active Users"),
+      };
 
       // Feature usage charts derived from NEW usage format (CopilotMetrics)
-      const createUsageDataset = (path: string[], label: string): ChartDataset<'line', number[]>[] => {
+      const createUsageDataset = (
+        path: string[],
+        label: string,
+      ): ChartDataset<"line", number[]>[] => {
         return perTeamData.map((teamData, index) => {
-          const teamName = getTeamName(teamData.slug)
-            const colorIndex = index % teamColors.length
-            return {
-              label: `${teamName} - ${label}`,
-              data: days.map(day => {
-                const usageDay = teamData.usage.find((u) => u.date === day)
-                if (!usageDay) return 0
-                // Traverse path for nested value
-                let val: unknown = usageDay
-                for (const segment of path) {
-                  // Dynamic traversal through nested objects using optional chaining
-                  val = val?.[segment]
-                  if (val == null) break
-                }
-                return (typeof val === 'number') ? val : 0
-              }),
-              backgroundColor: teamColors[colorIndex]!.bg,
-              borderColor: teamColors[colorIndex]!.border,
-              tension: 0.1
-            }
-        })
-      }
+          const teamName = getTeamName(teamData.slug);
+          const colorIndex = index % teamColors.length;
+          return {
+            label: `${teamName} - ${label}`,
+            data: days.map((day) => {
+              const usageDay = teamData.usage.find((u) => u.date === day);
+              if (!usageDay) return 0;
+              // Traverse path for nested value
+              let val: unknown = usageDay;
+              for (const segment of path) {
+                // Dynamic traversal through nested objects using optional chaining
+                val = val?.[segment];
+                if (val == null) break;
+              }
+              return typeof val === "number" ? val : 0;
+            }),
+            backgroundColor: teamColors[colorIndex]!.bg,
+            borderColor: teamColors[colorIndex]!.border,
+            tension: 0.1,
+          };
+        });
+      };
 
-      ideCompletionsChartData.value = { labels: days, datasets: createUsageDataset(['copilot_ide_code_completions', 'total_engaged_users'], 'IDE Completions Users') }
-      ideChatChartData.value = { labels: days, datasets: createUsageDataset(['copilot_ide_chat', 'total_engaged_users'], 'IDE Chat Users') }
-      githubChatChartData.value = { labels: days, datasets: createUsageDataset(['copilot_dotcom_chat', 'total_engaged_users'], 'GitHub Chat Users') }
-      githubPrChartData.value = { labels: days, datasets: createUsageDataset(['copilot_dotcom_pull_requests', 'total_engaged_users'], 'GitHub PR Users') }
+      ideCompletionsChartData.value = {
+        labels: days,
+        datasets: createUsageDataset(
+          ["copilot_ide_code_completions", "total_engaged_users"],
+          "IDE Completions Users",
+        ),
+      };
+      ideChatChartData.value = {
+        labels: days,
+        datasets: createUsageDataset(
+          ["copilot_ide_chat", "total_engaged_users"],
+          "IDE Chat Users",
+        ),
+      };
+      githubChatChartData.value = {
+        labels: days,
+        datasets: createUsageDataset(
+          ["copilot_dotcom_chat", "total_engaged_users"],
+          "GitHub Chat Users",
+        ),
+      };
+      githubPrChartData.value = {
+        labels: days,
+        datasets: createUsageDataset(
+          ["copilot_dotcom_pull_requests", "total_engaged_users"],
+          "GitHub PR Users",
+        ),
+      };
 
       // Derive language & editor comparisons from breakdown across all days per team
-      const langComp: LanguageTeamData[] = []
-      const editorComp: EditorTeamData[] = []
-      perTeamData.forEach(teamData => {
-        const langAgg: Record<string, { suggestions: number; acceptances: number }> = {}
-        const editorAgg: Record<string, number> = {}
+      const langComp: LanguageTeamData[] = [];
+      const editorComp: EditorTeamData[] = [];
+      perTeamData.forEach((teamData) => {
+        const langAgg: Record<
+          string,
+          { suggestions: number; acceptances: number }
+        > = {};
+        const editorAgg: Record<string, number> = {};
         teamData.metrics.forEach((m) => {
           (m.breakdown || []).forEach((b) => {
             if (b.language) {
-              if (!langAgg[b.language]) langAgg[b.language] = { suggestions: 0, acceptances: 0 }
-              langAgg[b.language].suggestions += b.suggestions_count || 0
-              langAgg[b.language].acceptances += b.acceptances_count || 0
+              if (!langAgg[b.language])
+                langAgg[b.language] = { suggestions: 0, acceptances: 0 };
+              langAgg[b.language].suggestions += b.suggestions_count || 0;
+              langAgg[b.language].acceptances += b.acceptances_count || 0;
             }
             if (b.editor) {
-              editorAgg[b.editor] = (editorAgg[b.editor] || 0) + (b.active_users || 0)
+              editorAgg[b.editor] =
+                (editorAgg[b.editor] || 0) + (b.active_users || 0);
             }
-          })
-        })
+          });
+        });
         Object.entries(langAgg).forEach(([language, vals]) => {
-          const rate = vals.suggestions ? (vals.acceptances / vals.suggestions) * 100 : 0
-          langComp.push({ team: teamData.slug, language, acceptance_rate: rate })
-        })
+          const rate = vals.suggestions
+            ? (vals.acceptances / vals.suggestions) * 100
+            : 0;
+          langComp.push({
+            team: teamData.slug,
+            language,
+            acceptance_rate: rate,
+          });
+        });
         Object.entries(editorAgg).forEach(([editor, active]) => {
-          editorComp.push({ team: teamData.slug, editor, active_users: active })
-        })
-      })
-      languageComparison.value = langComp
-      editorComparison.value = editorComp
-      generateBarChartData()
+          editorComp.push({
+            team: teamData.slug,
+            editor,
+            active_users: active,
+          });
+        });
+      });
+      languageComparison.value = langComp;
+      editorComparison.value = editorComp;
+      generateBarChartData();
 
       // Update total active users (latest day per team)
-      let totalActive = 0
-      perTeamData.forEach(teamData => {
+      let totalActive = 0;
+      perTeamData.forEach((teamData) => {
         if (teamData.metrics.length) {
-          const latest = [...teamData.metrics].sort((a, b) => a.day.localeCompare(b.day)).at(-1)
-          totalActive += latest?.total_active_users || 0
+          const latest = [...teamData.metrics]
+            .sort((a, b) => a.day.localeCompare(b.day))
+            .at(-1);
+          totalActive += latest?.total_active_users || 0;
         }
-      })
-      aggregatedTotalActiveUsers.value = totalActive
-    }
+      });
+      aggregatedTotalActiveUsers.value = totalActive;
+    };
 
     // Load teams on mount, then react to selection changes
-    onMounted(async () => { await loadTeams() })
-    watch(selectedTeams, async () => { await updateChartData() })
-    watch(() => props.dateRange, async () => {
-      // When date range changes, reload charts with new params
-      await updateChartData()
-    }, { deep: true })
+    onMounted(async () => {
+      await loadTeams();
+    });
+    watch(selectedTeams, async () => {
+      await updateChartData();
+    });
+    watch(
+      () => props.dateRange,
+      async () => {
+        // When date range changes, reload charts with new params
+        await updateChartData();
+      },
+      { deep: true },
+    );
 
     return {
       // derived props to avoid duplicate key in template scope
@@ -703,14 +867,14 @@ export default defineComponent({
       barChartOptions,
       selectedTeamObjects,
       scopeType,
-  totalActiveUsers,
+      totalActiveUsers,
       clearSelection,
       getTeamDetailUrl,
       generateBarChartData,
-  loadTeams
-    }
-  }
-})
+      loadTeams,
+    };
+  },
+});
 </script>
 
 <style scoped>

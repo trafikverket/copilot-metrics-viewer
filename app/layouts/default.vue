@@ -14,12 +14,10 @@
 <script lang="ts" setup>
 const config = useRuntimeConfig();
 const version = computed(() => config.public.version);
-const githubInfo = getDisplayName(config.public)
+const githubInfo = getDisplayName(config.public);
 useHead({
   title: githubInfo,
-  meta: [
-    { name: 'description', content: 'Copilot Metrics Dashboard' }
-  ]
+  meta: [{ name: "description", content: "Copilot Metrics Dashboard" }],
 });
 </script>
 

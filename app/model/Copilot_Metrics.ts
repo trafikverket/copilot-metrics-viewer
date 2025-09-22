@@ -1,4 +1,3 @@
-
 /**
  * TypeScript interfaces for type safety based on GitHub Copilot Usage Metrics API schema
  */
@@ -253,7 +252,8 @@ export class CopilotIdeCodeCompletionsEditorModel {
     this.total_engaged_users = data.total_engaged_users;
     this.languages = data.languages
       ? data.languages.map(
-          (lang: CopilotIdeCodeCompletionsEditorModelLanguageData) => new CopilotIdeCodeCompletionsEditorModelLanguage(lang)
+          (lang: CopilotIdeCodeCompletionsEditorModelLanguageData) =>
+            new CopilotIdeCodeCompletionsEditorModelLanguage(lang),
         )
       : [];
   }
@@ -277,7 +277,10 @@ export class CopilotIdeCodeCompletionsEditor {
     this.name = data.name;
     this.total_engaged_users = data.total_engaged_users;
     this.models = data.models
-      ? data.models.map((model: CopilotIdeCodeCompletionsEditorModelData) => new CopilotIdeCodeCompletionsEditorModel(model))
+      ? data.models.map(
+          (model: CopilotIdeCodeCompletionsEditorModelData) =>
+            new CopilotIdeCodeCompletionsEditorModel(model),
+        )
       : [];
   }
 }
@@ -318,14 +321,18 @@ export class CopilotIdeCodeCompletions {
   constructor(data: CopilotIdeCodeCompletionsData) {
     this.total_engaged_users = data.total_engaged_users;
     this.languages = data.languages
-      ? data.languages.map((lang: CopilotIdeCodeCompletionsLanguageData) => new CopilotIdeCodeCompletionsLanguage(lang))
+      ? data.languages.map(
+          (lang: CopilotIdeCodeCompletionsLanguageData) =>
+            new CopilotIdeCodeCompletionsLanguage(lang),
+        )
       : [];
     this.editors = data.editors
-      ? data.editors.map((editor: CopilotIdeCodeCompletionsEditorData) => new CopilotIdeCodeCompletionsEditor(editor))
+      ? data.editors.map(
+          (editor: CopilotIdeCodeCompletionsEditorData) =>
+            new CopilotIdeCodeCompletionsEditor(editor),
+        )
       : [];
   }
-
-
 }
 
 /**
@@ -362,8 +369,6 @@ export class CopilotIdeChatEditorModel {
   }
 }
 
-
-
 /**
  * Copilot Chat metrics for active editors
  */
@@ -383,7 +388,10 @@ export class CopilotIdeChatEditor {
     this.name = data.name;
     this.total_engaged_users = data.total_engaged_users;
     this.models = data.models
-      ? data.models.map((model: CopilotIdeChatEditorModelData) => new CopilotIdeChatEditorModel(model))
+      ? data.models.map(
+          (model: CopilotIdeChatEditorModelData) =>
+            new CopilotIdeChatEditorModel(model),
+        )
       : [];
   }
 }
@@ -404,7 +412,10 @@ export class CopilotIdeChat {
   constructor(data: CopilotIdeChatData) {
     this.total_engaged_users = data.total_engaged_users;
     this.editors = data.editors
-      ? data.editors.map((editor: CopilotIdeChatEditorData) => new CopilotIdeChatEditor(editor))
+      ? data.editors.map(
+          (editor: CopilotIdeChatEditorData) =>
+            new CopilotIdeChatEditor(editor),
+        )
       : [];
   }
 }
@@ -485,7 +496,8 @@ export class CopilotDotcomPullRequestsRepository {
     this.total_engaged_users = data.total_engaged_users;
     this.models = data.models
       ? data.models.map(
-          (model: CopilotDotcomPullRequestsRepositoryModelData) => new CopilotDotcomPullRequestsRepositoryModel(model)
+          (model: CopilotDotcomPullRequestsRepositoryModelData) =>
+            new CopilotDotcomPullRequestsRepositoryModel(model),
         )
       : [];
   }
@@ -499,7 +511,8 @@ export class CopilotDotcomPullRequests {
     this.total_engaged_users = data.total_engaged_users;
     this.repositories = data.repositories
       ? data.repositories.map(
-          (repo: CopilotDotcomPullRequestsRepositoryData) => new CopilotDotcomPullRequestsRepository(repo)
+          (repo: CopilotDotcomPullRequestsRepositoryData) =>
+            new CopilotDotcomPullRequestsRepository(repo),
         )
       : [];
   }
@@ -512,7 +525,10 @@ export class CopilotDotcomChat {
   constructor(data: CopilotDotcomChatData) {
     this.total_engaged_users = data.total_engaged_users;
     this.models = data.models
-      ? data.models.map((model: CopilotDotcomChatModelData) => new CopilotDotcomChatModel(model))
+      ? data.models.map(
+          (model: CopilotDotcomChatModelData) =>
+            new CopilotDotcomChatModel(model),
+        )
       : [];
   }
 }
@@ -543,5 +559,4 @@ export class CopilotMetrics {
       ? new CopilotDotcomPullRequests(data.copilot_dotcom_pull_requests)
       : null;
   }
-
 }

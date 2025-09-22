@@ -108,23 +108,23 @@ elevation="4" color="white" variant="elevated" class="mx-auto my-3"
 </template>
   
 <script lang="ts">
-  import { defineComponent, ref, watchEffect, computed } from 'vue';
-  import type { Seat } from '@/model/Seat';
-  import {
-    Chart as ChartJS,
-    ArcElement,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-    } from 'chart.js'
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+} from "chart.js";
+import { computed, defineComponent, ref, watchEffect } from "vue";
+import type { Seat } from "@/model/Seat";
 
 ChartJS.register(
-  ArcElement, 
+  ArcElement,
   CategoryScale,
   LinearScale,
   BarElement,
@@ -132,98 +132,100 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
-)
+  Legend,
+);
 
 export default defineComponent({
-name: 'SeatsAnalysisViewer',
-props: {
-        seats: {
-            type: Array as () => Seat[],
-            required: true,
-            default: () => []  
-        }
+  name: "SeatsAnalysisViewer",
+  props: {
+    seats: {
+      type: Array as () => Seat[],
+      required: true,
+      default: () => [],
     },
-setup(props) {
+  },
+  setup(props) {
     const totalSeats = ref<Seat[]>([]);
-        const noshowSeats = ref<number>(0);
-        const unusedSeatsInSevenDays = ref<number>(0);
-        const unusedSeatsInThirtyDays = ref<number>(0);
+    const noshowSeats = ref<number>(0);
+    const unusedSeatsInSevenDays = ref<number>(0);
+    const unusedSeatsInThirtyDays = ref<number>(0);
 
-        let noshowCount = 0;
-        let unusedIn7Count = 0;
-        let unusedIn30Count = 0;
+    let noshowCount = 0;
+    let unusedIn7Count = 0;
+    let unusedIn30Count = 0;
 
-        watchEffect(() => {
-            if (props.seats && Array.isArray(props.seats)) {
-                totalSeats.value = props.seats;
+    watchEffect(() => {
+      if (props.seats && Array.isArray(props.seats)) {
+        totalSeats.value = props.seats;
 
-                const oneWeekAgo = new Date();
-                const thirtyDaysAgo = new Date();
-                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const oneWeekAgo = new Date();
+        const thirtyDaysAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-                props.seats.forEach(seat => {
-                    if(!seat.last_activity_at) {
-                        noshowCount++;
-                    } else {
-                        const lastActivityDate = new Date(seat.last_activity_at);
-                        if (lastActivityDate < oneWeekAgo) {
-                            unusedIn7Count++;
-                        }
-                        if (lastActivityDate < thirtyDaysAgo) {
-                            unusedIn30Count++;
-                        }
-                    }
-                });
-
-                // to sort totalSeats by last_activity_at
-                totalSeats.value.sort((a, b) => {
-                    if (a.last_activity_at === null) {
-                        return -1;
-                    }
-                    if (b.last_activity_at === null) {
-                        return 1;
-                    }
-                    return new Date(a.last_activity_at) > new Date(b.last_activity_at) ? 1 : -1;
-                });
-            } else {
-                throw new Error('Invalid number of seats');
+        props.seats.forEach((seat) => {
+          if (!seat.last_activity_at) {
+            noshowCount++;
+          } else {
+            const lastActivityDate = new Date(seat.last_activity_at);
+            if (lastActivityDate < oneWeekAgo) {
+              unusedIn7Count++;
             }
-
+            if (lastActivityDate < thirtyDaysAgo) {
+              unusedIn30Count++;
+            }
+          }
         });
 
-        noshowSeats.value = noshowCount;
-        unusedSeatsInSevenDays.value = unusedIn7Count;
-        unusedSeatsInThirtyDays.value = unusedIn30Count;
+        // to sort totalSeats by last_activity_at
+        totalSeats.value.sort((a, b) => {
+          if (a.last_activity_at === null) {
+            return -1;
+          }
+          if (b.last_activity_at === null) {
+            return 1;
+          }
+          return new Date(a.last_activity_at) > new Date(b.last_activity_at)
+            ? 1
+            : -1;
+        });
+      } else {
+        throw new Error("Invalid number of seats");
+      }
+    });
 
-        // Add computed properties for team filtering info
-        const config = useRuntimeConfig();
-        const isTeamView = computed(() => config.public.scope?.includes('team') && config.public.githubTeam);
-        const currentTeam = computed(() => config.public.githubTeam || '');
+    noshowSeats.value = noshowCount;
+    unusedSeatsInSevenDays.value = unusedIn7Count;
+    unusedSeatsInThirtyDays.value = unusedIn30Count;
 
-        return {
-            totalSeats,
-            noshowSeats: noshowSeats,
-            unusedSeatsInSevenDays: unusedSeatsInSevenDays,
-            unusedSeatsInThirtyDays: unusedSeatsInThirtyDays,
-            isTeamView,
-            currentTeam
-        }
-},
-data() {
+    // Add computed properties for team filtering info
+    const config = useRuntimeConfig();
+    const isTeamView = computed(
+      () => config.public.scope?.includes("team") && config.public.githubTeam,
+    );
+    const currentTeam = computed(() => config.public.githubTeam || "");
+
     return {
-        headers: [
-            { title: 'S.No', key: 'serialNumber'},
-            { title: 'Login', key: 'login' },
-            { title: 'GitHub ID', key: 'id' },
-            { title: 'Assigning team', key: 'team' },
-            { title: 'Assigned time', key: 'created_at' },
-            { title: 'Last Activity At', key: 'last_activity_at' },
-            { title: 'Last Activity Editor', key: 'last_activity_editor' },
-        ],
+      totalSeats,
+      noshowSeats: noshowSeats,
+      unusedSeatsInSevenDays: unusedSeatsInSevenDays,
+      unusedSeatsInThirtyDays: unusedSeatsInThirtyDays,
+      isTeamView,
+      currentTeam,
     };
-}   
-  
+  },
+  data() {
+    return {
+      headers: [
+        { title: "S.No", key: "serialNumber" },
+        { title: "Login", key: "login" },
+        { title: "GitHub ID", key: "id" },
+        { title: "Assigning team", key: "team" },
+        { title: "Assigned time", key: "created_at" },
+        { title: "Last Activity At", key: "last_activity_at" },
+        { title: "Last Activity Editor", key: "last_activity_editor" },
+      ],
+    };
+  },
 });
 </script>

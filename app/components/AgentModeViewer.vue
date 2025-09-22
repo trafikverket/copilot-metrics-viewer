@@ -234,282 +234,305 @@ v-if="stats.modelUsageChartData.labels.length" :data="stats.modelUsageChartData"
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, type PropType, shallowRef } from 'vue';
-import type { CopilotMetrics } from '@/model/Copilot_Metrics';
-import { Options } from '@/model/Options';
-import { useRoute } from 'vue-router';
-import { Line as LineChart, Bar as BarChart } from 'vue-chartjs';
 import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
-} from 'chart.js';
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+} from "chart.js";
+import { defineComponent, type PropType, ref, shallowRef, watch } from "vue";
+import { Bar as BarChart, Line as LineChart } from "vue-chartjs";
+import { useRoute } from "vue-router";
+import type { CopilotMetrics } from "@/model/Copilot_Metrics";
+import { Options } from "@/model/Options";
 
 ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
 );
 
 interface ModelData {
-    name: string;
-    editor?: string;
-    repository?: string;
-    model_type: string;
-    total_engaged_users: number;
-    total_chats?: number;
-    total_chat_insertion_events?: number;
-    total_chat_copy_events?: number;
-    total_pr_summaries_created?: number;
+  name: string;
+  editor?: string;
+  repository?: string;
+  model_type: string;
+  total_engaged_users: number;
+  total_chats?: number;
+  total_chat_insertion_events?: number;
+  total_chat_copy_events?: number;
+  total_pr_summaries_created?: number;
 }
 
 interface ChartData {
-    labels: string[];
-    datasets: Array<{
-        label: string;
-        data: number[];
-        borderColor?: string;
-        backgroundColor?: string;
-        fill?: boolean;
-    }>;
+  labels: string[];
+  datasets: Array<{
+    label: string;
+    data: number[];
+    borderColor?: string;
+    backgroundColor?: string;
+    fill?: boolean;
+  }>;
 }
 
 interface GitHubStats {
-    totalIdeCodeCompletionUsers: number;
-    totalIdeChatUsers: number;
-    totalDotcomChatUsers: number;
-    totalDotcomPRUsers: number;
-    totalPRSummariesCreated: number;
-    totalIdeCodeCompletionModels: number;
-    totalIdeChatModels: number;
-    totalDotcomChatModels: number;
-    totalDotcomPRModels: number;
-    ideCodeCompletionModels: ModelData[];
-    ideChatModels: ModelData[];
-    dotcomChatModels: ModelData[];
-    dotcomPRModels: ModelData[];
-    agentModeChartData: ChartData;
-    modelUsageChartData: ChartData;
+  totalIdeCodeCompletionUsers: number;
+  totalIdeChatUsers: number;
+  totalDotcomChatUsers: number;
+  totalDotcomPRUsers: number;
+  totalPRSummariesCreated: number;
+  totalIdeCodeCompletionModels: number;
+  totalIdeChatModels: number;
+  totalDotcomChatModels: number;
+  totalDotcomPRModels: number;
+  ideCodeCompletionModels: ModelData[];
+  ideChatModels: ModelData[];
+  dotcomChatModels: ModelData[];
+  dotcomPRModels: ModelData[];
+  agentModeChartData: ChartData;
+  modelUsageChartData: ChartData;
 }
 
 const defaultStats: GitHubStats = {
-    totalIdeCodeCompletionUsers: 0,
-    totalIdeChatUsers: 0,
-    totalDotcomChatUsers: 0,
-    totalDotcomPRUsers: 0,
-    totalPRSummariesCreated: 0,
-    totalIdeCodeCompletionModels: 0,
-    totalIdeChatModels: 0,
-    totalDotcomChatModels: 0,
-    totalDotcomPRModels: 0,
-    ideCodeCompletionModels: [],
-    ideChatModels: [],
-    dotcomChatModels: [],
-    dotcomPRModels: [],
-    agentModeChartData: { labels: [], datasets: [] },
-    modelUsageChartData: { labels: [], datasets: [] }
+  totalIdeCodeCompletionUsers: 0,
+  totalIdeChatUsers: 0,
+  totalDotcomChatUsers: 0,
+  totalDotcomPRUsers: 0,
+  totalPRSummariesCreated: 0,
+  totalIdeCodeCompletionModels: 0,
+  totalIdeChatModels: 0,
+  totalDotcomChatModels: 0,
+  totalDotcomPRModels: 0,
+  ideCodeCompletionModels: [],
+  ideChatModels: [],
+  dotcomChatModels: [],
+  dotcomPRModels: [],
+  agentModeChartData: { labels: [], datasets: [] },
+  modelUsageChartData: { labels: [], datasets: [] },
 };
 
 interface DateRange {
-    since?: string;
-    until?: string;
+  since?: string;
+  until?: string;
 }
 
 export default defineComponent({
-    name: 'AgentModeViewer',
-    components: {
-        LineChart,
-        BarChart
+  name: "AgentModeViewer",
+  components: {
+    LineChart,
+    BarChart,
+  },
+  props: {
+    dateRange: {
+      type: Object as PropType<DateRange>,
+      required: true,
     },
-    props: {
-        dateRange: {
-            type: Object as PropType<DateRange>,
-            required: true
-        },
-        originalMetrics: {
-            type: Array as PropType<CopilotMetrics[]>,
-            required: true
-        },
-        dateRangeDescription: {
-            type: String,
-            default: ''
+    originalMetrics: {
+      type: Array as PropType<CopilotMetrics[]>,
+      required: true,
+    },
+    dateRangeDescription: {
+      type: String,
+      default: "",
+    },
+  },
+  setup(props) {
+    // Use shallowRef for better performance with large objects
+    const stats = shallowRef<GitHubStats>({ ...defaultStats });
+    const loading = ref(false);
+    const error = ref<string | null>(null);
+    const route = useRoute();
+
+    // Cache to prevent unnecessary API calls
+    const lastMetricsHash = ref<string>("");
+    const lastDateRange = ref<string>("");
+
+    // Optimized fetch function with caching and debouncing
+    let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
+    const fetchStats = async () => {
+      if (props.originalMetrics.length === 0) return;
+
+      // Create a simple hash of the metrics to detect changes
+      const currentHash = JSON.stringify(
+        props.originalMetrics.map((m) => ({
+          date: m.date,
+          activeUsers: m.total_active_users,
+          engagedUsers: m.total_engaged_users,
+        })),
+      );
+      const currentDateRange = props.dateRangeDescription || "";
+
+      if (
+        currentHash === lastMetricsHash.value &&
+        currentDateRange === lastDateRange.value
+      )
+        return;
+
+      if (fetchTimeout) {
+        clearTimeout(fetchTimeout);
+      }
+
+      fetchTimeout = setTimeout(async () => {
+        loading.value = true;
+        error.value = null;
+
+        try {
+          // Extract date range from props.originalMetrics if available
+          const options = Options.fromRoute(
+            route,
+            props.dateRange.since,
+            props.dateRange.until,
+          );
+          const params = options.toParams();
+          const queryString = new URLSearchParams(params).toString();
+          const apiUrl = queryString
+            ? `/api/github-stats?${queryString}`
+            : "/api/github-stats";
+
+          const response = (await $fetch(apiUrl)) as GitHubStats;
+          // Use Object.assign to maintain reactivity while updating properties
+          Object.assign(stats.value, response);
+          lastMetricsHash.value = currentHash;
+          lastDateRange.value = currentDateRange;
+        } catch (err: unknown) {
+          error.value =
+            err instanceof Error
+              ? err.message
+              : "Failed to fetch GitHub statistics";
+          console.error("Error fetching GitHub stats:", err);
+        } finally {
+          loading.value = false;
         }
-    },
-    setup(props) {
-        // Use shallowRef for better performance with large objects
-        const stats = shallowRef<GitHubStats>({ ...defaultStats });
-        const loading = ref(false);
-        const error = ref<string | null>(null);
-        const route = useRoute();
+      }, 150); // Reduced debounce time for better responsiveness
+    };
 
-        // Cache to prevent unnecessary API calls
-        const lastMetricsHash = ref<string>('');
-        const lastDateRange = ref<string>('');
+    // Watch for changes with improved performance
+    watch(
+      () => [
+        props.originalMetrics,
+        props.dateRangeDescription,
+        props.dateRange,
+      ],
+      fetchStats,
+      { immediate: true, deep: false },
+    );
 
-        // Optimized fetch function with caching and debouncing
-        let fetchTimeout: ReturnType<typeof setTimeout> | null = null;
-        const fetchStats = async () => {
-            if (props.originalMetrics.length === 0) return;
+    // Static table headers (avoid recreating on every render)
+    const codeCompletionHeaders = [
+      { title: "Model Name", key: "name" },
+      { title: "Editor", key: "editor" },
+      { title: "Type", key: "model_type" },
+      { title: "Total Users with Activity", key: "total_engaged_users" },
+    ];
 
-            // Create a simple hash of the metrics to detect changes
-            const currentHash = JSON.stringify(props.originalMetrics.map(m => ({
-                date: m.date,
-                activeUsers: m.total_active_users,
-                engagedUsers: m.total_engaged_users
-            })));
-            const currentDateRange = props.dateRangeDescription || '';
+    const ideChatHeaders = [
+      { title: "Model Name", key: "name" },
+      { title: "Editor", key: "editor" },
+      { title: "Type", key: "model_type" },
+      { title: "Total Users with Activity", key: "total_engaged_users" },
+      { title: "Total Chats", key: "total_chats" },
+      { title: "Insertions", key: "total_chat_insertion_events" },
+      { title: "Copy Events", key: "total_chat_copy_events" },
+    ];
 
-            if (currentHash === lastMetricsHash.value && currentDateRange === lastDateRange.value) return;
+    const dotcomChatHeaders = [
+      { title: "Model Name", key: "name" },
+      { title: "Type", key: "model_type" },
+      { title: "Total Users with Activity", key: "total_engaged_users" },
+      { title: "Total Chats", key: "total_chats" },
+    ];
 
-            if (fetchTimeout) {
-                clearTimeout(fetchTimeout);
-            }
+    const dotcomPRHeaders = [
+      { title: "Model Name", key: "name" },
+      { title: "Repository", key: "repository" },
+      { title: "Type", key: "model_type" },
+      { title: "Total Users with Activity", key: "total_engaged_users" },
+      { title: "PR Summaries", key: "total_pr_summaries_created" },
+    ];
 
-            fetchTimeout = setTimeout(async () => {
-                loading.value = true;
-                error.value = null;
+    // Optimized chart options with performance settings
+    const chartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 0, // Disable animations for better performance
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Users with Activity",
+          },
+        },
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: "Copilot Feature Usage Over Time",
+        },
+        legend: {
+          display: true,
+          position: "top" as const,
+        },
+      },
+      interaction: {
+        intersect: false,
+      },
+    };
 
-                try {
-                    // Extract date range from props.originalMetrics if available
-                    const options = Options.fromRoute(route, props.dateRange.since, props.dateRange.until);
-                    const params = options.toParams();
-                    const queryString = new URLSearchParams(params).toString();
-                    const apiUrl = queryString ? `/api/github-stats?${queryString}` : '/api/github-stats';
+    const barChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 0, // Disable animations for better performance
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Number of Models",
+          },
+        },
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: "Model Usage Distribution",
+        },
+        legend: {
+          display: true,
+          position: "top" as const,
+        },
+      },
+      interaction: {
+        intersect: false,
+      },
+    };
 
-                    const response = await $fetch(apiUrl) as GitHubStats;
-                    // Use Object.assign to maintain reactivity while updating properties
-                    Object.assign(stats.value, response);
-                    lastMetricsHash.value = currentHash;
-                    lastDateRange.value = currentDateRange;
-                } catch (err: unknown) {
-                    error.value = err instanceof Error ? err.message : 'Failed to fetch GitHub statistics';
-                    console.error('Error fetching GitHub stats:', err);
-                } finally {
-                    loading.value = false;
-                }
-            }, 150); // Reduced debounce time for better responsiveness
-        };
-
-        // Watch for changes with improved performance
-        watch(() => [props.originalMetrics, props.dateRangeDescription, props.dateRange], fetchStats, { immediate: true, deep: false });
-
-        // Static table headers (avoid recreating on every render)
-        const codeCompletionHeaders = [
-            { title: 'Model Name', key: 'name' },
-            { title: 'Editor', key: 'editor' },
-            { title: 'Type', key: 'model_type' },
-            { title: 'Total Users with Activity', key: 'total_engaged_users' }
-        ];
-
-        const ideChatHeaders = [
-            { title: 'Model Name', key: 'name' },
-            { title: 'Editor', key: 'editor' },
-            { title: 'Type', key: 'model_type' },
-            { title: 'Total Users with Activity', key: 'total_engaged_users' },
-            { title: 'Total Chats', key: 'total_chats' },
-            { title: 'Insertions', key: 'total_chat_insertion_events' },
-            { title: 'Copy Events', key: 'total_chat_copy_events' }
-        ];
-
-        const dotcomChatHeaders = [
-            { title: 'Model Name', key: 'name' },
-            { title: 'Type', key: 'model_type' },
-            { title: 'Total Users with Activity', key: 'total_engaged_users' },
-            { title: 'Total Chats', key: 'total_chats' }
-        ];
-
-        const dotcomPRHeaders = [
-            { title: 'Model Name', key: 'name' },
-            { title: 'Repository', key: 'repository' },
-            { title: 'Type', key: 'model_type' },
-            { title: 'Total Users with Activity', key: 'total_engaged_users' },
-            { title: 'PR Summaries', key: 'total_pr_summaries_created' }
-        ];
-
-        // Optimized chart options with performance settings
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 0 // Disable animations for better performance
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Users with Activity'
-                    }
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Copilot Feature Usage Over Time'
-                },
-                legend: {
-                    display: true,
-                    position: 'top' as const
-                }
-            },
-            interaction: {
-                intersect: false
-            }
-        };
-
-        const barChartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: {
-                duration: 0 // Disable animations for better performance
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Number of Models'
-                    }
-                }
-            },
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Model Usage Distribution'
-                },
-                legend: {
-                    display: true,
-                    position: 'top' as const
-                }
-            },
-            interaction: {
-                intersect: false
-            }
-        };
-
-        return {
-            stats,
-            loading,
-            error,
-            codeCompletionHeaders,
-            ideChatHeaders,
-            dotcomChatHeaders,
-            dotcomPRHeaders,
-            chartOptions,
-            barChartOptions
-        };
-    }
+    return {
+      stats,
+      loading,
+      error,
+      codeCompletionHeaders,
+      ideChatHeaders,
+      dotcomChatHeaders,
+      dotcomPRHeaders,
+      chartOptions,
+      barChartOptions,
+    };
+  },
 });
 </script>
 

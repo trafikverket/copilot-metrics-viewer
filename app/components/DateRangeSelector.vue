@@ -60,76 +60,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 
 interface Props {
-  loading?: boolean
+  loading?: boolean;
 }
 
-interface Emits {
-  (e: 'date-range-changed', value: { 
-    since?: string; 
-    until?: string; 
+type Emits = (
+  e: "date-range-changed",
+  value: {
+    since?: string;
+    until?: string;
     description: string;
     excludeHolidays?: boolean;
-  }): void
-}
+  },
+) => void;
 
 withDefaults(defineProps<Props>(), {
-  loading: false
-})
+  loading: false,
+});
 
-const emit = defineEmits<Emits>()
+const emit = defineEmits<Emits>();
 
 // Calculate default dates (last 28 days)
-const today = new Date()
-const defaultFromDate = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000) // 27 days ago to include today
+const today = new Date();
+const defaultFromDate = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000); // 27 days ago to include today
 
-const fromDate = ref(formatDate(defaultFromDate))
-const toDate = ref(formatDate(today))
-const excludeHolidays = ref(false)
-
+const fromDate = ref(formatDate(defaultFromDate));
+const toDate = ref(formatDate(today));
+const excludeHolidays = ref(false);
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0] || ''
+  return date.toISOString().split("T")[0] || "";
 }
 
 function parseDate(dateString: string): Date {
-  return new Date(dateString + 'T00:00:00.000Z')
+  return new Date(dateString + "T00:00:00.000Z");
 }
 
 const dateRangeText = computed(() => {
   if (!fromDate.value || !toDate.value) {
-    return 'Select date range'
+    return "Select date range";
   }
-  
-  const from = parseDate(fromDate.value)
-  const to = parseDate(toDate.value)
-  const diffDays = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1
-  const withoutHolidays = excludeHolidays.value ? ' (excluding holidays/weekends)' : ''
+
+  const from = parseDate(fromDate.value);
+  const to = parseDate(toDate.value);
+  const diffDays =
+    Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const withoutHolidays = excludeHolidays.value
+    ? " (excluding holidays/weekends)"
+    : "";
 
   if (diffDays === 1) {
-    return `For ${from.toLocaleDateString()}${withoutHolidays}`
+    return `For ${from.toLocaleDateString()}${withoutHolidays}`;
   } else if (diffDays <= 28 && isLast28Days()) {
-    return `Over the last 28 days ${withoutHolidays}`
+    return `Over the last 28 days ${withoutHolidays}`;
   } else {
-    return `From ${from.toLocaleDateString()} to ${to.toLocaleDateString()} (${diffDays} days)${withoutHolidays}`
+    return `From ${from.toLocaleDateString()} to ${to.toLocaleDateString()} (${diffDays} days)${withoutHolidays}`;
   }
-})
+});
 
 function isLast28Days(): boolean {
-  if (!fromDate.value || !toDate.value) return false
-  
-  const today = new Date()
-  const expectedFromDate = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000)
-  
-  const from = parseDate(fromDate.value)
-  const to = parseDate(toDate.value)
-  
+  if (!fromDate.value || !toDate.value) return false;
+
+  const today = new Date();
+  const expectedFromDate = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000);
+
+  const from = parseDate(fromDate.value);
+  const to = parseDate(toDate.value);
+
   return (
     from.toDateString() === expectedFromDate.toDateString() &&
     to.toDateString() === today.toDateString()
-  )
+  );
 }
 
 function updateDateRange() {
@@ -138,39 +141,39 @@ function updateDateRange() {
 }
 
 function resetToDefault() {
-  const today = new Date()
-  const defaultFrom = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000)
-  
-  fromDate.value = formatDate(defaultFrom)
-  toDate.value = formatDate(today)
+  const today = new Date();
+  const defaultFrom = new Date(today.getTime() - 27 * 24 * 60 * 60 * 1000);
+
+  fromDate.value = formatDate(defaultFrom);
+  toDate.value = formatDate(today);
 }
 
 function applyDateRange() {
   if (!fromDate.value || !toDate.value) {
-    return
+    return;
   }
-  
-  const from = parseDate(fromDate.value)
-  const to = parseDate(toDate.value)
-  
+
+  const from = parseDate(fromDate.value);
+  const to = parseDate(toDate.value);
+
   if (from > to) {
     // Swap dates if from is after to
-    const temp = fromDate.value
-    fromDate.value = toDate.value
-    toDate.value = temp
+    const temp = fromDate.value;
+    fromDate.value = toDate.value;
+    toDate.value = temp;
   }
-  
+
   // Emit the date range change with holiday options
-  emit('date-range-changed', {
+  emit("date-range-changed", {
     since: fromDate.value,
     until: toDate.value,
     description: dateRangeText.value,
     excludeHolidays: excludeHolidays.value,
-  })
+  });
 }
 
 // Initialize with default range on mount
 onMounted(() => {
-  applyDateRange()
-})
+  applyDateRange();
+});
 </script>

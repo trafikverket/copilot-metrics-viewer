@@ -143,55 +143,51 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, toRef, watchEffect } from 'vue';
-import type { Metrics } from '@/model/Metrics';
 import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
   Chart as ChartJS,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+} from "chart.js";
+import { defineComponent, ref, toRef, watchEffect } from "vue";
+import { Bar, Line } from "vue-chartjs";
+import type { Metrics } from "@/model/Metrics";
+
+ChartJS.register(
   ArcElement,
   CategoryScale,
   LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
-
-import { Line, Bar } from 'vue-chartjs'
-
-ChartJS.register(
-  ArcElement, 
-  CategoryScale,
-  LinearScale,
   BarElement,
   PointElement,
   LineElement,
   Title,
   Tooltip,
-  Legend
-)
-
+  Legend,
+);
 
 export default defineComponent({
-  name: 'MetricsViewer',
+  name: "MetricsViewer",
   components: {
     Line,
-    Bar
-  }
-  ,
+    Bar,
+  },
   props: {
-        metrics: {
-            type: Array as PropType<Metrics[]>,
-            required: true
-        },
-        dateRangeDescription: {
-            type: String,
-            default: 'Over the last 28 days'
-        }
+    metrics: {
+      type: Array as PropType<Metrics[]>,
+      required: true,
     },
+    dateRangeDescription: {
+      type: String,
+      default: "Over the last 28 days",
+    },
+  },
   setup(props) {
-
     //Tiles
     const acceptanceRateAverageByLines = ref(0);
     const acceptanceRateAverageByCount = ref(0);
@@ -201,19 +197,34 @@ export default defineComponent({
     const totalLinesSuggested = ref(0);
 
     //Acceptance Rate by lines
-    const acceptanceRateByLinesChartData = ref<{ labels: string[]; datasets: any[] }>({ labels: [], datasets: [] });
+    const acceptanceRateByLinesChartData = ref<{
+      labels: string[];
+      datasets: any[];
+    }>({ labels: [], datasets: [] });
 
     //Acceptance Rate by count
-    const acceptanceRateByCountChartData = ref<{ labels: string[]; datasets: any[] }>({ labels: [], datasets: [] });
+    const acceptanceRateByCountChartData = ref<{
+      labels: string[];
+      datasets: any[];
+    }>({ labels: [], datasets: [] });
 
     //Total Suggestions Count | Total Acceptance Counts
-    const totalSuggestionsAndAcceptanceChartData = ref<{ labels: string[]; datasets: any[] }>({ labels: [], datasets: [] });
+    const totalSuggestionsAndAcceptanceChartData = ref<{
+      labels: string[];
+      datasets: any[];
+    }>({ labels: [], datasets: [] });
 
     //Total Lines Suggested | Total Lines Accepted
-    const chartData = ref<{ labels: string[]; datasets: any[] }>({ labels: [], datasets: [] });
-    
+    const chartData = ref<{ labels: string[]; datasets: any[] }>({
+      labels: [],
+      datasets: [],
+    });
+
     //Total Active Users
-    const totalActiveUsersChartData = ref<{ labels: string[]; datasets: any[] }>({ labels: [], datasets: [] });  
+    const totalActiveUsersChartData = ref<{
+      labels: string[];
+      datasets: any[];
+    }>({ labels: [], datasets: [] });
 
     const chartOptions = {
       responsive: true,
@@ -225,8 +236,8 @@ export default defineComponent({
           left: 150,
           right: 150,
           top: 20,
-          bottom: 40
-        }
+          bottom: 40,
+        },
       },
     };
 
@@ -237,175 +248,194 @@ export default defineComponent({
         y: {
           beginAtZero: true,
           ticks: {
-            stepSize: 1
-          }
-        }
+            stepSize: 1,
+          },
+        },
       },
       layout: {
         padding: {
           left: 50,
           right: 50,
           top: 50,
-          bottom: 50
-        }
+          bottom: 50,
+        },
       },
     };
 
     // Watch for changes in metrics prop and recalculate all data
     watchEffect(() => {
-      const data = toRef(props, 'metrics').value;
-      
+      const data = toRef(props, "metrics").value;
+
       if (!data || data.length === 0) {
         return;
       }
 
       cumulativeNumberSuggestions.value = 0;
-    const cumulativeSuggestionsData = data.map((m: Metrics) => {
-      cumulativeNumberSuggestions.value += m.total_suggestions_count;
-      return m.total_suggestions_count;
-    });
+      const cumulativeSuggestionsData = data.map((m: Metrics) => {
+        cumulativeNumberSuggestions.value += m.total_suggestions_count;
+        return m.total_suggestions_count;
+      });
 
-    cumulativeNumberAcceptances.value = 0;
-    const cumulativeAcceptancesData = data.map((m: Metrics) => {
-      cumulativeNumberAcceptances.value += m.total_acceptances_count;
-      return m.total_acceptances_count;
-    });
+      cumulativeNumberAcceptances.value = 0;
+      const cumulativeAcceptancesData = data.map((m: Metrics) => {
+        cumulativeNumberAcceptances.value += m.total_acceptances_count;
+        return m.total_acceptances_count;
+      });
 
-    totalSuggestionsAndAcceptanceChartData.value = {
-      labels: data.map((m: Metrics) => m.day),
-      datasets: [
-        {
-          label: 'Total Suggestions',
-          data: cumulativeSuggestionsData,
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          borderColor: 'rgba(75, 192, 192, 1)'
-
-        },
-        {
-          label: 'Total Acceptance',
-          data: cumulativeAcceptancesData,
-          backgroundColor: 'rgba(153, 102, 255, 0.2)',
-          borderColor: 'rgba(153, 102, 255, 1)'
-        },
-        
-      ]
-    };
-
-    cumulativeNumberLOCAccepted.value = 0;
-    const cumulativeLOCAcceptedData = data.map((m: Metrics) => {
-      const total_lines_accepted = m.total_lines_accepted;
-      cumulativeNumberLOCAccepted.value += total_lines_accepted;
-      return total_lines_accepted;
-    });
-
-    chartData.value = {
-      labels: data.map((m: Metrics) => m.day),
-      datasets: [
-        {
-          label: 'Total Lines Suggested',
-          data: data.map((m: Metrics) => m.total_lines_suggested),
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          borderColor: 'rgba(75, 192, 192, 1)'
-
-        },
-        {
-          label: 'Total Lines Accepted',
-          data: cumulativeLOCAcceptedData,
-          backgroundColor: 'rgba(153, 102, 255, 0.2)',
-          borderColor: 'rgba(153, 102, 255, 1)'
-        }
-      ]
-    };
-    
-    const acceptanceRatesByLines = data.map((m: Metrics) => {
-      const rate = m.total_lines_suggested !== 0 ? (m.total_lines_accepted / m.total_lines_suggested) * 100 : 0;
-      return rate;
-    });
-
-    const acceptanceRatesByCount = data.map((m: Metrics) => {
-      const rate = m.total_suggestions_count !== 0 ? (m.total_acceptances_count / m.total_suggestions_count) * 100 : 0;
-      return rate;
-    });
-
-    acceptanceRateByLinesChartData.value = {
-      labels: data.map((m: Metrics) => m.day),
-      datasets: [
-        {
-          type: 'line', // This makes the dataset a line in the chart
-          label: 'Acceptance Rate by Lines',
-          data: acceptanceRatesByLines,
-          backgroundColor: 'rgba(173, 216, 230, 0.2)', // light blue
-          borderColor: 'rgba(173, 216, 230, 1)', // darker blue
-          fill: false // This makes the area under the line not filled
-        }
-      ]
-    };
-
-    acceptanceRateByCountChartData.value = {
-      labels: data.map((m: Metrics) => m.day),
-      datasets: [
-        {
-          type: 'line', // This makes the dataset a line in the chart
-          label: 'Acceptance Rate by Count',
-          data: acceptanceRatesByCount,
-          backgroundColor: 'rgba(173, 216, 230, 0.2)', // light blue
-          borderColor: 'rgba(173, 216, 230, 1)', // darker blue
-          fill: false // This makes the area under the line not filled
-        }
-      ]
-    };
-    
-    totalLinesSuggested.value = data.reduce((sum: number, m: Metrics) => sum + m.total_lines_suggested, 0);
-
-    if(totalLinesSuggested.value === 0){
-      acceptanceRateAverageByLines.value = 0;
-    } else {
-      acceptanceRateAverageByLines.value = cumulativeNumberLOCAccepted.value / totalLinesSuggested.value * 100;
-    }
-
-    // Calculate acceptanceRateAverageByCount
-    if (cumulativeNumberSuggestions.value === 0) {
-      acceptanceRateAverageByCount.value = 0;
-    } else {
-      acceptanceRateAverageByCount.value = cumulativeNumberAcceptances.value / cumulativeNumberSuggestions.value * 100;
-    }
-
-    totalActiveUsersChartData.value = {
-      labels: data.map((m: Metrics) => m.day),
-      datasets: [
-        {
-          label: 'Total Active Users',
-          data: data.map((m: Metrics) => m.total_active_users),
-          backgroundColor: 'rgba(0, 0, 139, 0.2)', // dark blue with 20% opacity
-          borderColor: 'rgba(255, 99, 132, 1)'
-        }
-      ]
-    };
-    
-    }); // end of watchEffect
-
-    return { totalSuggestionsAndAcceptanceChartData, chartData, 
-      chartOptions, totalActiveUsersChartData, 
-      totalActiveUsersChartOptions, acceptanceRateByLinesChartData, acceptanceRateByCountChartData, acceptanceRateAverageByLines, acceptanceRateAverageByCount, cumulativeNumberSuggestions, 
-      cumulativeNumberAcceptances, cumulativeNumberLOCAccepted, totalLinesSuggested };
-  },
-  data () {
-    return {
-      data : {
-        labels: ['VueJs', 'EmberJs', 'ReactJs', 'AngularJs'],
+      totalSuggestionsAndAcceptanceChartData.value = {
+        labels: data.map((m: Metrics) => m.day),
         datasets: [
           {
-        backgroundColor: ['#41B883', '#E46651', '#00D8FF', '#DD1B16'],
-        data: [40, 20, 80, 10]
-        }
-        ]
-      },
-      options : {
-        responsive: true,
-      maintainAspectRatio: false
+            label: "Total Suggestions",
+            data: cumulativeSuggestionsData,
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            borderColor: "rgba(75, 192, 192, 1)",
+          },
+          {
+            label: "Total Acceptance",
+            data: cumulativeAcceptancesData,
+            backgroundColor: "rgba(153, 102, 255, 0.2)",
+            borderColor: "rgba(153, 102, 255, 1)",
+          },
+        ],
+      };
+
+      cumulativeNumberLOCAccepted.value = 0;
+      const cumulativeLOCAcceptedData = data.map((m: Metrics) => {
+        const total_lines_accepted = m.total_lines_accepted;
+        cumulativeNumberLOCAccepted.value += total_lines_accepted;
+        return total_lines_accepted;
+      });
+
+      chartData.value = {
+        labels: data.map((m: Metrics) => m.day),
+        datasets: [
+          {
+            label: "Total Lines Suggested",
+            data: data.map((m: Metrics) => m.total_lines_suggested),
+            backgroundColor: "rgba(75, 192, 192, 0.2)",
+            borderColor: "rgba(75, 192, 192, 1)",
+          },
+          {
+            label: "Total Lines Accepted",
+            data: cumulativeLOCAcceptedData,
+            backgroundColor: "rgba(153, 102, 255, 0.2)",
+            borderColor: "rgba(153, 102, 255, 1)",
+          },
+        ],
+      };
+
+      const acceptanceRatesByLines = data.map((m: Metrics) => {
+        const rate =
+          m.total_lines_suggested !== 0
+            ? (m.total_lines_accepted / m.total_lines_suggested) * 100
+            : 0;
+        return rate;
+      });
+
+      const acceptanceRatesByCount = data.map((m: Metrics) => {
+        const rate =
+          m.total_suggestions_count !== 0
+            ? (m.total_acceptances_count / m.total_suggestions_count) * 100
+            : 0;
+        return rate;
+      });
+
+      acceptanceRateByLinesChartData.value = {
+        labels: data.map((m: Metrics) => m.day),
+        datasets: [
+          {
+            type: "line", // This makes the dataset a line in the chart
+            label: "Acceptance Rate by Lines",
+            data: acceptanceRatesByLines,
+            backgroundColor: "rgba(173, 216, 230, 0.2)", // light blue
+            borderColor: "rgba(173, 216, 230, 1)", // darker blue
+            fill: false, // This makes the area under the line not filled
+          },
+        ],
+      };
+
+      acceptanceRateByCountChartData.value = {
+        labels: data.map((m: Metrics) => m.day),
+        datasets: [
+          {
+            type: "line", // This makes the dataset a line in the chart
+            label: "Acceptance Rate by Count",
+            data: acceptanceRatesByCount,
+            backgroundColor: "rgba(173, 216, 230, 0.2)", // light blue
+            borderColor: "rgba(173, 216, 230, 1)", // darker blue
+            fill: false, // This makes the area under the line not filled
+          },
+        ],
+      };
+
+      totalLinesSuggested.value = data.reduce(
+        (sum: number, m: Metrics) => sum + m.total_lines_suggested,
+        0,
+      );
+
+      if (totalLinesSuggested.value === 0) {
+        acceptanceRateAverageByLines.value = 0;
+      } else {
+        acceptanceRateAverageByLines.value =
+          (cumulativeNumberLOCAccepted.value / totalLinesSuggested.value) * 100;
       }
-    }
+
+      // Calculate acceptanceRateAverageByCount
+      if (cumulativeNumberSuggestions.value === 0) {
+        acceptanceRateAverageByCount.value = 0;
+      } else {
+        acceptanceRateAverageByCount.value =
+          (cumulativeNumberAcceptances.value /
+            cumulativeNumberSuggestions.value) *
+          100;
+      }
+
+      totalActiveUsersChartData.value = {
+        labels: data.map((m: Metrics) => m.day),
+        datasets: [
+          {
+            label: "Total Active Users",
+            data: data.map((m: Metrics) => m.total_active_users),
+            backgroundColor: "rgba(0, 0, 139, 0.2)", // dark blue with 20% opacity
+            borderColor: "rgba(255, 99, 132, 1)",
+          },
+        ],
+      };
+    }); // end of watchEffect
+
+    return {
+      totalSuggestionsAndAcceptanceChartData,
+      chartData,
+      chartOptions,
+      totalActiveUsersChartData,
+      totalActiveUsersChartOptions,
+      acceptanceRateByLinesChartData,
+      acceptanceRateByCountChartData,
+      acceptanceRateAverageByLines,
+      acceptanceRateAverageByCount,
+      cumulativeNumberSuggestions,
+      cumulativeNumberAcceptances,
+      cumulativeNumberLOCAccepted,
+      totalLinesSuggested,
+    };
   },
-  
+  data() {
+    return {
+      data: {
+        labels: ["VueJs", "EmberJs", "ReactJs", "AngularJs"],
+        datasets: [
+          {
+            backgroundColor: ["#41B883", "#E46651", "#00D8FF", "#DD1B16"],
+            data: [40, 20, 80, 10],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+      },
+    };
+  },
 });
 </script>

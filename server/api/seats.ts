@@ -1,7 +1,7 @@
 import { Seat } from "@/model/Seat";
-import { readFileSync } from 'fs';
-import { Options } from '@/model/Options';
-import { resolve } from 'path';
+import { readFileSync } from "fs";
+import { Options } from "@/model/Options";
+import { resolve } from "path";
 
 // Minimal shape of a GitHub team member object we care about
 export interface TeamMember {
@@ -20,9 +20,18 @@ export interface TeamMember {
  * @param headers Headers (with Authorization) forwarded from the incoming request
  * @returns Array of team member objects returned by the GitHub API
  */
-export async function fetchAllTeamMembers(options: Options, headers: HeadersInit): Promise<TeamMember[]> {
+export async function fetchAllTeamMembers(
+  options: Options,
+  headers: HeadersInit,
+): Promise<TeamMember[]> {
   // Only proceed for explicit team scopes with an organization + team slug
-  if (!(options.scope === 'team-organization' || options.scope === 'team-enterprise') || !options.githubTeam) {
+  if (
+    !(
+      options.scope === "team-organization" ||
+      options.scope === "team-enterprise"
+    ) ||
+    !options.githubTeam
+  ) {
     return [];
   }
 
@@ -40,7 +49,7 @@ export async function fetchAllTeamMembers(options: Options, headers: HeadersInit
   while (true) {
     const pageData = await $fetch<TeamMember[]>(membersUrl, {
       headers,
-      params: { per_page: perPage, page }
+      params: { per_page: perPage, page },
     });
 
     if (!Array.isArray(pageData) || pageData.length === 0) break;
@@ -72,8 +81,9 @@ function deduplicateSeats(seats: Seat[]): Seat[] {
       uniqueSeats.set(seat.id, seat);
     } else {
       // Keep the seat with more recent activity, treating null as earliest date
-      const seatActivity = seat.last_activity_at || '1970-01-01T00:00:00Z';
-      const existingActivity = existingSeat.last_activity_at || '1970-01-01T00:00:00Z';
+      const seatActivity = seat.last_activity_at || "1970-01-01T00:00:00Z";
+      const existingActivity =
+        existingSeat.last_activity_at || "1970-01-01T00:00:00Z";
 
       if (seatActivity > existingActivity) {
         uniqueSeats.set(seat.id, seat);
@@ -85,7 +95,6 @@ function deduplicateSeats(seats: Seat[]): Seat[] {
 }
 
 export default defineEventHandler(async (event) => {
-
   const logger = console;
   const query = getQuery(event);
   const options = Options.fromQuery(query);
@@ -95,24 +104,27 @@ export default defineEventHandler(async (event) => {
 
   if (options.isDataMocked && mockedDataPath) {
     const path = resolve(mockedDataPath);
-    const data = readFileSync(path, 'utf8');
+    const data = readFileSync(path, "utf8");
     const dataJson = JSON.parse(data);
     const seatsData = dataJson.seats.map((item: unknown) => new Seat(item));
 
     // Deduplicate seats by user ID to handle enterprise scenarios where users are assigned to multiple organizations
     const deduplicatedSeats = deduplicateSeats(seatsData);
 
-    logger.info('Using mocked data');
+    logger.info("Using mocked data");
     return deduplicatedSeats;
   }
 
-  if (!event.context.headers.has('Authorization')) {
-    logger.error('No Authentication provided');
-    return new Response('No Authentication provided', { status: 401 });
+  if (!event.context.headers.has("Authorization")) {
+    logger.error("No Authentication provided");
+    return new Response("No Authentication provided", { status: 401 });
   }
 
   // if scope is team - get team members
-  const teamMembers: TeamMember[] = await fetchAllTeamMembers(options, event.context.headers);
+  const teamMembers: TeamMember[] = await fetchAllTeamMembers(
+    options,
+    event.context.headers,
+  );
 
   const perPage = 100;
   let page = 1;
@@ -120,17 +132,22 @@ export default defineEventHandler(async (event) => {
   logger.info(`Fetching 1st page of seats data from ${apiUrl}`);
 
   try {
-    response = await $fetch(apiUrl, {
+    response = (await $fetch(apiUrl, {
       headers: event.context.headers,
       params: {
         per_page: perPage,
-        page: page
-      }
-    }) as { seats: unknown[], total_seats: number };
+        page: page,
+      },
+    })) as { seats: unknown[]; total_seats: number };
   } catch (error: unknown) {
-    logger.error('Error fetching seats data:', error);
-    const status = typeof error === 'object' && error && 'statusCode' in error ? (error as { statusCode?: number }).statusCode : 500;
-    return new Response('Error fetching seats data. Error: ' + String(error), { status: status || 500 });
+    logger.error("Error fetching seats data:", error);
+    const status =
+      typeof error === "object" && error && "statusCode" in error
+        ? (error as { statusCode?: number }).statusCode
+        : 500;
+    return new Response("Error fetching seats data. Error: " + String(error), {
+      status: status || 500,
+    });
   }
 
   let seatsData = response.seats.map((item: unknown) => new Seat(item));
@@ -141,15 +158,17 @@ export default defineEventHandler(async (event) => {
 
   // Fetch the remaining pages
   for (page = 2; page <= totalPages; page++) {
-    response = await $fetch(apiUrl, {
+    response = (await $fetch(apiUrl, {
       headers: event.context.headers,
       params: {
         per_page: perPage,
-        page: page
-      }
-    }) as { seats: unknown[], total_seats: number };
+        page: page,
+      },
+    })) as { seats: unknown[]; total_seats: number };
 
-    seatsData = seatsData.concat(response.seats.map((item: unknown) => new Seat(item)));
+    seatsData = seatsData.concat(
+      response.seats.map((item: unknown) => new Seat(item)),
+    );
   }
 
   // Deduplicate seats by user ID to handle enterprise scenarios where users are assigned to multiple organizations
@@ -157,8 +176,10 @@ export default defineEventHandler(async (event) => {
 
   if (teamMembers.length > 0) {
     // Filter seats for team members only
-    return deduplicatedSeats.filter(seat => teamMembers.some(member => member.id === seat.id));
+    return deduplicatedSeats.filter((seat) =>
+      teamMembers.some((member) => member.id === seat.id),
+    );
   }
 
   return deduplicatedSeats;
-})
+});

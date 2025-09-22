@@ -33,27 +33,31 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRaw } from 'vue';
-import { MetricsValidator } from '@/model/MetricsValidator';
-import { convertMetricsToCSV, convertCopilotMetricsToCSV, downloadCSV } from '@/utils/csvExport';
-import type { CopilotMetrics } from '@/model/Copilot_Metrics';
-import type { Metrics } from '@/model/Metrics';
+import { defineComponent, toRaw } from "vue";
+import type { CopilotMetrics } from "@/model/Copilot_Metrics";
+import type { Metrics } from "@/model/Metrics";
+import { MetricsValidator } from "@/model/MetricsValidator";
+import {
+  convertCopilotMetricsToCSV,
+  convertMetricsToCSV,
+  downloadCSV,
+} from "@/utils/csvExport";
 
 export default defineComponent({
-  name: 'ApiResponse',
+  name: "ApiResponse",
   props: {
     originalMetrics: {
       type: Array as () => CopilotMetrics[],
-      required: true
+      required: true,
     },
     metrics: {
       type: Array as () => Metrics[],
-      required: true
+      required: true,
     },
     seats: {
       type: Array,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     return {
@@ -61,22 +65,23 @@ export default defineComponent({
       showSeatMessage: false,
       showQualityMessage: false,
       isError: false,
-      message: '',
-      qualityMessage: ''
+      message: "",
+      qualityMessage: "",
     };
   },
   methods: {
     copyToClipboard(refName: string) {
       const jsonText = this.$refs[refName] as HTMLElement;
-      navigator.clipboard.writeText(jsonText.innerText)
+      navigator.clipboard
+        .writeText(jsonText.innerText)
         .then(() => {
-          this.message = 'Copied to clipboard!';
+          this.message = "Copied to clipboard!";
           this.isError = false;
         })
-        .catch(err => {
-          this.message = 'Could not copy text!';
+        .catch((err) => {
+          this.message = "Could not copy text!";
           this.isError = true;
-          console.error('Could not copy text: ', err);
+          console.error("Could not copy text: ", err);
         });
 
       this.showCopyMessage = true;
@@ -84,7 +89,7 @@ export default defineComponent({
         this.showCopyMessage = false;
       }, 3000);
     },
-    
+
     showSeatCount() {
       const seatCount = this.seats.length;
       //console.log('Seat count:', seatCount);
@@ -98,22 +103,27 @@ export default defineComponent({
 
     checkMetricsDataQuality() {
       // Convert reactive proxy to raw object using Vue's toRaw
-      const rawOriginalMetrics = toRaw(this.originalMetrics) as CopilotMetrics[];
+      const rawOriginalMetrics = toRaw(
+        this.originalMetrics,
+      ) as CopilotMetrics[];
       const validator = new MetricsValidator(rawOriginalMetrics);
-    
-     // console.log(validator);
+
+      // console.log(validator);
       // create a new MetricsValidator object
       // check all the metrics
       const results = validator.checkAllMetrics();
       //console.log(results);
       // check if all the metrics are valid
-      const allValid = Object.values(results).every((result: any) => result.length === 0);
+      const allValid = Object.values(results).every(
+        (result: any) => result.length === 0,
+      );
 
       if (allValid) {
-        this.message = 'All metrics are valid!';
+        this.message = "All metrics are valid!";
         this.isError = false;
       } else {
-        this.message = 'Some metrics might be inconsistent, please double check the API response.\n';
+        this.message =
+          "Some metrics might be inconsistent, please double check the API response.\n";
         this.isError = true;
         let typeCounter = 1;
         for (const [key, value] of Object.entries(results)) {
@@ -136,19 +146,19 @@ export default defineComponent({
         const rawMetrics = toRaw(this.metrics) as Metrics[];
         const csvContent = convertMetricsToCSV(rawMetrics);
         if (csvContent) {
-          const currentDate = new Date().toISOString().split('T')[0];
+          const currentDate = new Date().toISOString().split("T")[0];
           const filename = `copilot-metrics-summary-${currentDate}.csv`;
           downloadCSV(csvContent, filename);
-          this.message = 'Summary CSV file downloaded successfully!';
+          this.message = "Summary CSV file downloaded successfully!";
           this.isError = false;
         } else {
-          this.message = 'No metrics data available to export.';
+          this.message = "No metrics data available to export.";
           this.isError = true;
         }
       } catch (error) {
-        this.message = 'Error generating CSV file.';
+        this.message = "Error generating CSV file.";
         this.isError = true;
-        console.error('Error generating CSV:', error);
+        console.error("Error generating CSV:", error);
       }
 
       this.showCopyMessage = true;
@@ -163,27 +173,27 @@ export default defineComponent({
         const rawMetrics = toRaw(this.originalMetrics) as CopilotMetrics[];
         const csvContent = convertCopilotMetricsToCSV(rawMetrics);
         if (csvContent) {
-          const currentDate = new Date().toISOString().split('T')[0];
+          const currentDate = new Date().toISOString().split("T")[0];
           const filename = `copilot-metrics-full-${currentDate}.csv`;
           downloadCSV(csvContent, filename);
-          this.message = 'Full CSV file downloaded successfully!';
+          this.message = "Full CSV file downloaded successfully!";
           this.isError = false;
         } else {
-          this.message = 'No metrics data available to export.';
+          this.message = "No metrics data available to export.";
           this.isError = true;
         }
       } catch (error) {
-        this.message = 'Error generating CSV file.';
+        this.message = "Error generating CSV file.";
         this.isError = true;
-        console.error('Error generating CSV:', error);
+        console.error("Error generating CSV:", error);
       }
 
       this.showCopyMessage = true;
       setTimeout(() => {
         this.showCopyMessage = false;
       }, 3000);
-    }
-  }
+    },
+  },
 });
 </script>
 
