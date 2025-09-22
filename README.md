@@ -16,9 +16,30 @@ För att ändra en hemlighet, sätt önskat värde för en miljövariabeln och k
 
 ### Utveckling
 
-1. Innan appen kan startas behöver du lägga in en dekrypteringsnyckel för hemligheterna som behövs i runtime.
+1. Innan appen kan startas behöver du lägga in en dekrypteringsnyckel för hemligheterna som behövs i runtime. Gör detta genom att skapa filen `.env.keys`:
+
+    ```env
+    #/------------------!DOTENV_PRIVATE_KEYS!-------------------/
+    #/ private decryption keys. DO NOT commit to source control /
+    #/     [how it works](https://dotenvx.com/encryption)       /
+    #/----------------------------------------------------------/
+
+    # .env.production
+    DOTENV_PRIVATE_KEY_PRODUCTION="HEMLIGNYCKELHÄR"
+    ```
+
 2. Starta appen och injektera hemligheterna: `dotenvx run -f .env -- npm run dev`
 
 ### Produktion i Containerplattformen (Pågående)
 
 Fyll på instruktioner här.
+
+## Uppbyggnad
+
+Detta projekt är skapat genom att klona ovan nämnt repo samt följande modifikationer och tillägg:
+
+- Lagt till dotenvx för hantering av hemligheter i kod.
+- Tagit bort beroenden som försöker ladda hem innehåll från internet.
+- Lagt till biome för formattering.
+- Lagt till en `.npmrc`-fil för att npm ska installera paket från ProGet.
+- Lagt till denna dokumentation.
