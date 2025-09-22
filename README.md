@@ -14,23 +14,25 @@ För att underlätta hantering av hemligheter används dotenvx. Se följande gui
 
 För att ändra en hemlighet, sätt önskat värde för en miljövariabeln och kryptera om filen efter ändring.
 
-### Utveckling
+Innan appen kan startas behöver du lägga in en dekrypteringsnyckel för hemligheterna som behövs i runtime. Gör detta genom att skapa filen `.env.keys`:
 
-1. Innan appen kan startas behöver du lägga in en dekrypteringsnyckel för hemligheterna som behövs i runtime. Gör detta genom att skapa filen `.env.keys`:
+```env
+#/------------------!DOTENV_PRIVATE_KEYS!-------------------/
+#/ private decryption keys. DO NOT commit to source control /
+#/     [how it works](https://dotenvx.com/encryption)       /
+#/----------------------------------------------------------/
+# .env.production
+DOTENV_PRIVATE_KEY_PRODUCTION="HEMLIGNYCKELHÄR"
+```
 
-    ```env
-    #/------------------!DOTENV_PRIVATE_KEYS!-------------------/
-    #/ private decryption keys. DO NOT commit to source control /
-    #/     [how it works](https://dotenvx.com/encryption)       /
-    #/----------------------------------------------------------/
+## Starta appen lokalt
 
-    # .env.production
-    DOTENV_PRIVATE_KEY_PRODUCTION="HEMLIGNYCKELHÄR"
-    ```
+1. Installera beroenden: `npm install`
+2. Starta app
+    - Produktionsbygge: `npm run build && dotenvx run -f .env -- npm run start`
+    - Devserver med hot reload: `dotenvx run -f .env -- npm run dev`
 
-2. Starta appen och injektera hemligheterna: `dotenvx run -f .env -- npm run dev`
-
-### Produktion i Containerplattformen (Pågående)
+## Kör i produktion
 
 Fyll på instruktioner här.
 
