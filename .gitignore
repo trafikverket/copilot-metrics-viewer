@@ -19,9 +19,12 @@ logs
 .idea
 
 # Local env files
-.env
-.env.*
+.env.local
 !.env.example
+# Ignore .env because we're using dotenvx encrypted secrets
+# .env.*
+# Ignore private keys for decrypting .env files
+.env.keys
 
 # Playwright
 playwright-report

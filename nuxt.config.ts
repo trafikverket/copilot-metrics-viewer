@@ -40,7 +40,7 @@ export default defineNuxtConfig({
   css: [
     '@/assets/global.css'
   ],
-  modules: ['@nuxt/fonts', 'vuetify-nuxt-module', '@nuxt/eslint', 'nuxt-auth-utils'],
+  modules: ['vuetify-nuxt-module', '@nuxt/eslint', 'nuxt-auth-utils'],
 
   vuetify: {
     moduleOptions: {
