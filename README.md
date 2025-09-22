@@ -18,7 +18,7 @@ Följande instruktioner är enbart testade i en Linux-miljö (WSL), men bör fun
 
 ### Hentera hemligheter i kod med dotenvx
 
-För att underlätta hantering av hemligheter används dotenvx. Se följande guide för hur du använder detta verktyg: [https://dotenvx.com/docs/quickstart](https://dotenvx.com/docs/quickstart). Kortfattat så används följanbde kommandon för att manuellt avkryptera och kryptera `.env`-filerna.
+För att underlätta hantering av hemligheter används dotenvx. Se följande guide för hur du använder detta verktyg: [https://dotenvx.com/docs/quickstart](https://dotenvx.com/docs/quickstart). Kortfattat så används följande kommandon för att manuellt avkryptera och kryptera `.env`-filerna.
 
 - Avkryptera fil: `dotenvx decrypt -f .env`
 - Kryptera fil: `dotenvx encrypt -f .env`
