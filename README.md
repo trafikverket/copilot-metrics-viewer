@@ -14,6 +14,8 @@ Detta projekt är skapat genom att klona ovan nämnt repo samt följande modifik
 
 ## Kom igång
 
+Följande instruktioner är enbart testade i en Linux-miljö (WSL), men bör funka även på Windows.
+
 ### Hentera hemligheter i kod med dotenvx
 
 För att underlätta hantering av hemligheter används dotenvx. Se följande guide för hur du använder detta verktyg: [https://dotenvx.com/docs/quickstart](https://dotenvx.com/docs/quickstart). Kortfattat så används följanbde kommandon för att manuellt avkryptera och kryptera `.env`-filerna.
